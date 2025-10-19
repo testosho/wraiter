@@ -1008,12 +1008,17 @@
 		body.focus-mode #mobile-bottom-bar,
 		body.focus-mode #suggestion,
 		body.focus-mode #file-library {
-		    display: none;
+		    display: none !important;
 		}
 
 		body.focus-mode .main-container {
 		    margin: 0 !important;
 		    height: 100vh !important;
+		}
+
+		body.focus-mode #editor {
+		    padding-top: 20px !important;
+		    margin-top: 0 !important;
 		}
 		
 
@@ -2397,7 +2402,7 @@ function toggleAiPanel() {
 		    files[id] = {
 		        id: data.id || id,
 		        content: data.content || '',
-		        text: data.text || '',
+		        text: editor.innerText, 
 		        title: data.title || 'Untitled',
 		        lastModified: data.lastModified || new Date().toISOString(),
 		        tags: data.tags || [],
@@ -3088,12 +3093,12 @@ function toggleAiPanel() {
 					fileItem.onmouseleave = function() {
 					    docActions.style.display = 'none';
 					};
-
-					// Mobile: Long press or tap to show buttons
+					
+					// Mobile: Tap to show buttons, tap again to open
 					fileItem.onclick = function(e) {
 					    if (e.target.closest('button')) return;
     
-					    // Toggle buttons on/off
+					    // If buttons are hidden, show them
 					    if (docActions.style.display === 'none' || !docActions.style.display) {
 					        // Hide all others first
 					        var allDocActions = document.querySelectorAll('.doc-actions');
@@ -3102,7 +3107,7 @@ function toggleAiPanel() {
 					        });
 					        docActions.style.display = 'flex';
 					    } else {
-					        // Open document if buttons already visible
+					        // Buttons visible - open document
 					        currentDocumentId = file.id;
 					        currentTags = file.tags || [];
 					        currentFolder = file.folder || 'All Documents';
@@ -3119,27 +3124,8 @@ function toggleAiPanel() {
 					        historyIndex = 0;
 					    }
 					};
+
 				    
-					// Single click opens document directly
-					fileItem.onclick = function(e) {
-					    if (e.target.closest('button')) return;
-    
-					    currentDocumentId = file.id;
-					    currentTags = file.tags || [];
-					    currentFolder = file.folder || 'All Documents';
-					    editor.innerHTML = file.content;
-					    document.body.classList.remove('library-visible');
-    
-					    // Reset preview if it was open
-					    var previewPanel = document.getElementById('preview-panel');
-					    if (previewPanel) {
-					        previewPanel.style.display = 'none';
-					    }
-					    editor.style.display = 'block';
-    
-					    history = [editor.innerHTML];
-					    historyIndex = 0;
-					};
 
 					folderContentDiv.appendChild(fileItem);
 					});
@@ -3394,7 +3380,7 @@ function toggleAiPanel() {
 		    bookText += '═══════════════════════════════════════════════════════\n\n';
     
 		    folderDocs.forEach(function(doc, index) {
-		        bookText += '## Chapter ' + (index + 1) + ': ' + doc.title + '\n\n';
+		        bookText += doc.title.toUpperCase() + '\n\n';  // ✅ Only title in caps
 		        bookText += doc.text + '\n\n';
 		        bookText += '═══════════════════════════════════════════════════════\n\n';
 		    });
@@ -4598,63 +4584,73 @@ function toggleAiPanel() {
 		function showAdvancedSaveOptions() {
 		    var modalHTML = `
 		        <div style="line-height: 1.5; padding: 10px;">
-		            <p style="margin-bottom: 15px; font-weight: 600;">Choose Export Option:</p>
-            
+		            <p style="margin-bottom: 15px; font-weight: 600;">Choose Export Option</p>
 		            <button id="save-all-txt" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                📚 Save All Folders as Text<br>
+		                Save All Folders as Text<br>
 		                <small style="opacity: 0.7;">Complete library with folder structure</small>
 		            </button>
-            
 		            <button id="save-all-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                📚 Save All Folders as PDF<br>
+		                Save All Folders as PDF<br>
 		                <small style="opacity: 0.7;">Complete library with folder structure</small>
 		            </button>
-            
 		            <button id="save-current-txt" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                📄 Save Current Document as Text<br>
+		                Save Current Document as Text<br>
 		                <small style="opacity: 0.7;">Active document only</small>
 		            </button>
-            
 		            <button id="save-current-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                📄 Save Current Document as PDF<br>
+		                Save Current Document as PDF<br>
 		                <small style="opacity: 0.7;">Active document only</small>
 		            </button>
-            
-		            <button id="cancel-save" class="modal-button secondary" style="width: 100%; margin-top: 15px;">
-		                Cancel
-		            </button>
+		            <button id="cancel-save" class="modal-button secondary" style="width: 100%; margin-top: 15px;">Cancel</button>
 		        </div>
 		    `;
     
 		    showModal('Save As', modalHTML);
     
 		    setTimeout(function() {
-		        document.getElementById('save-all-txt').onclick = function() {
-		            hideModal();
-		            exportAllFoldersAsText();
-		        };
+		        var btn1 = document.getElementById('save-all-txt');
+		        var btn2 = document.getElementById('save-all-pdf');
+		        var btn3 = document.getElementById('save-current-txt');
+		        var btn4 = document.getElementById('save-current-pdf');
+		        var btnCancel = document.getElementById('cancel-save');
         
-		        document.getElementById('save-all-pdf').onclick = function() {
-		            hideModal();
-		            exportAllFoldersAsPDF();
-		        };
-        
-		        document.getElementById('save-current-txt').onclick = function() {
-		            hideModal();
-		            exportCurrentDocumentAsText();
-		        };
-        
-		        document.getElementById('save-current-pdf').onclick = function() {
-		            hideModal();
-		            exportCurrentDocumentAsPDF();
-		        };
-        
-		        document.getElementById('cancel-save').onclick = function() {
-		            hideModal();
-		        };
+		        if (btn1) {
+		            btn1.onclick = function() {
+		                btn1.onclick = null;
+		                hideModal();
+		                exportAllFoldersAsText();
+		            };
+		        }
+		        if (btn2) {
+		            btn2.onclick = function() {
+		                btn2.onclick = null;
+		                hideModal();
+		                exportAllFoldersAsPDF();
+		            };
+		        }
+		        if (btn3) {
+		            btn3.onclick = function() {
+		                btn3.onclick = null;
+		                hideModal();
+		                exportCurrentDocumentAsText();
+		            };
+		        }
+		        if (btn4) {
+		            btn4.onclick = function() {
+		                btn4.onclick = null;
+		                hideModal();
+		                exportCurrentDocumentAsPDF();
+		            };
+		        }
+		        if (btnCancel) {
+		            btnCancel.onclick = function() {
+		                hideModal();
+		            };
+		        }
 		    }, 100);
 		}
-
+		
+		
 		function exportAllFoldersAsText() {
 		    var files = getAllFiles();
 		    var folders = getAllFoldersData();
@@ -4806,42 +4802,112 @@ function toggleAiPanel() {
 		        showCustomAlert('No Document', 'Please open a document first');
 		        return;
 		    }
-    
 		    if (!window.jspdf) {
 		        showCustomAlert('Error', 'PDF library not loaded');
 		        return;
 		    }
-    
+
 		    var files = getAllFiles();
 		    var document = files[currentDocumentId];
-    
 		    if (!document) {
 		        showCustomAlert('Error', 'Document not found');
 		        return;
 		    }
-    
+
 		    var doc = new jspdf.jsPDF();
-		    var yPos = 20;
+		    var text = editor.innerText;
     
-		    doc.setFontSize(16);
-		    doc.text(document.title, 15, yPos);
-		    yPos += 15;
-    
-		    doc.setFontSize(10);
-		    var lines = doc.splitTextToSize(document.text, 180);
-		    lines.forEach(function(line) {
-		        if (yPos > 280) {
-		            doc.addPage();
-		            yPos = 20;
+		    // Detect if Fountain screenplay
+		    if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/im.test(text)) {
+		        // Screenplay formatting
+		        var lines = text.split('\n');
+		        var yPos = 20;
+		        var lineHeight = 7;
+        
+		        doc.setFontSize(12);
+		        doc.text(document.title, 105, yPos, { align: 'center' });
+		        yPos += 20;
+        
+		        for (var i = 0; i < lines.length; i++) {
+		            var line = lines[i].trim();
+            
+		            if (yPos > 280) {
+		                doc.addPage();
+		                yPos = 20;
+		            }
+            
+		            if (!line) {
+		                yPos += lineHeight;
+		                continue;
+		            }
+            
+		            // Scene headings - bold, uppercase
+		            if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/i.test(line)) {
+		                doc.setFont(undefined, 'bold');
+		                doc.text(line.toUpperCase(), 15, yPos);
+		                doc.setFont(undefined, 'normal');
+		                yPos += lineHeight * 2;
+		            }
+		            // Character names - centered, uppercase
+		            else if (/^[A-Z\s\(\)]+$/.test(line) && line.length < 40) {
+		                doc.text(line, 90, yPos);
+		                yPos += lineHeight;
+		            }
+		            // Parentheticals
+		            else if (/^\(.*\)$/.test(line)) {
+		                doc.setFont(undefined, 'italic');
+		                doc.text(line, 80, yPos);
+		                doc.setFont(undefined, 'normal');
+		                yPos += lineHeight;
+		            }
+		            // Dialogue (after character name)
+		            else if (i > 0 && /^[A-Z\s\(\)]+$/.test(lines[i-1].trim())) {
+		                var dialogueLines = doc.splitTextToSize(line, 90);
+		                dialogueLines.forEach(function(dl) {
+		                    if (yPos > 280) {
+		                        doc.addPage();
+		                        yPos = 20;
+		                    }
+		                    doc.text(dl, 70, yPos);
+		                    yPos += lineHeight;
+		                });
+		            }
+		            // Action/description
+		            else {
+		                var actionLines = doc.splitTextToSize(line, 180);
+		                actionLines.forEach(function(al) {
+		                    if (yPos > 280) {
+		                        doc.addPage();
+		                        yPos = 20;
+		                    }
+		                    doc.text(al, 15, yPos);
+		                    yPos += lineHeight;
+		                });
+		            }
 		        }
-		        doc.text(line, 15, yPos);
-		        yPos += 7;
-		    });
+		    } else {
+		        // Regular document formatting
+		        var yPos = 20;
+		        doc.setFontSize(16);
+		        doc.text(document.title, 15, yPos);
+		        yPos += 15;
+        
+		        doc.setFontSize(10);
+		        var lines = doc.splitTextToSize(document.text, 180);
+		        lines.forEach(function(line) {
+		            if (yPos > 280) {
+		                doc.addPage();
+		                yPos = 20;
+		            }
+		            doc.text(line, 15, yPos);
+		            yPos += 7;
+		        });
+		    }
     
 		    doc.save(document.title.replace(/[^a-z0-9]/gi, '_') + '_' + Date.now() + '.pdf');
 		    showCustomAlert('Exported', 'Document exported as PDF');
 		}
-
+		
 		window.showAdvancedSaveOptions = showAdvancedSaveOptions;
 		window.exportAllFoldersAsText = exportAllFoldersAsText;
 		window.exportAllFoldersAsPDF = exportAllFoldersAsPDF;
@@ -5220,13 +5286,46 @@ function toggleAiPanel() {
 		                showCustomAlert('Error', 'PDF save not available.');
 		            }
 		            break;
-		        case 'open-text-file':
-		            if (window.TaskModelBridge) {
-		                window.TaskModelBridge.openTextFile();
-		            } else {
-		                showCustomAlert('Error', 'File open function not available');
-		            }
-		            break;
+				case 'open-text-file':
+				    // Create hidden file input
+				    var fileInput = document.createElement('input');
+				    fileInput.type = 'file';
+				    fileInput.accept = '.txt,.fountain';
+				    fileInput.style.display = 'none';
+    
+				    fileInput.onchange = function(e) {
+				        var file = e.target.files[0];
+				        if (!file) return;
+        
+				        var reader = new FileReader();
+				        reader.onload = function(event) {
+				            editor.innerHTML = event.target.result;
+				            currentDocumentId = generateId();
+				            currentFolder = 'All Documents';
+				            history = [editor.innerHTML];
+				            historyIndex = 0;
+            
+				            // Save imported document
+				            saveToStorage(currentDocumentId, {
+				                id: currentDocumentId,
+				                content: editor.innerHTML,
+				                text: editor.innerText,
+				                title: file.name.replace(/\.(txt|fountain)$/, ''),
+				                lastModified: new Date().toISOString(),
+				                folder: 'All Documents',
+				                tags: []
+				            });
+            
+				            showCustomAlert('Opened', 'File imported successfully');
+				        };
+				        reader.readAsText(file);
+				        document.body.removeChild(fileInput);
+				    };
+    
+				    document.body.appendChild(fileInput);
+				    fileInput.click();
+				    break;
+		        
 		        case 'share-content':
 		            shareContent();
 		            break;
