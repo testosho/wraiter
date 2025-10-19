@@ -2966,14 +2966,65 @@ function toggleAiPanel() {
 				    fileItem.setAttribute('draggable', 'true');
 				    fileItem.setAttribute('data-doc-id', file.id);
     
-				    // Drag events (works on desktop only)
-				    fileItem.ondragstart = function(e) {
-				        e.dataTransfer.setData('docId', file.id);
-				        this.style.opacity = '0.5';
-				    };
-				    fileItem.ondragend = function(e) {
-				        this.style.opacity = '1';
-				    };
+					// Desktop drag-and-drop
+					fileItem.ondragstart = function(e) {
+					    e.dataTransfer.setData('docId', file.id);
+					    this.style.opacity = '0.5';
+					};
+					fileItem.ondragend = function(e) {
+					    this.style.opacity = '1';
+					};
+
+					// Mobile touch drag-and-drop
+					var draggedDocId = null;
+					var dragStartY = 0;
+					var isDragging = false;
+
+					fileItem.ontouchstart = function(e) {
+					    if (e.target.closest('button')) return;
+					    dragStartY = e.touches[0].clientY;
+    
+					    // Long press to enable drag
+					    setTimeout(function() {
+					        if (dragStartY) {
+					            isDragging = true;
+					            draggedDocId = file.id;
+					            fileItem.style.opacity = '0.5';
+					            fileItem.style.position = 'relative';
+					            fileItem.style.zIndex = '1000';
+					        }
+					    }, 500);
+					};
+
+					fileItem.ontouchmove = function(e) {
+					    if (isDragging) {
+					        e.preventDefault();
+					        var touch = e.touches[0];
+					        fileItem.style.transform = 'translateY(' + (touch.clientY - dragStartY) + 'px)';
+					    }
+					};
+
+					fileItem.ontouchend = function(e) {
+					    if (isDragging) {
+					        var touch = e.changedTouches[0];
+					        var dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+					        var folderHeader = dropTarget ? dropTarget.closest('[data-folder]') : null;
+        
+					        if (folderHeader && draggedDocId) {
+					            var targetFolder = folderHeader.getAttribute('data-folder');
+					            moveDocumentToFolder(draggedDocId, targetFolder);
+					        }
+        
+					        fileItem.style.opacity = '1';
+					        fileItem.style.transform = '';
+					        fileItem.style.zIndex = '';
+					    }
+    
+					    isDragging = false;
+					    draggedDocId = null;
+					    dragStartY = 0;
+					};
+				  
     
 				    var contentDiv = document.createElement('div');
 				    contentDiv.style.paddingRight = '80px';
