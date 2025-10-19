@@ -20,6 +20,15 @@
 		    <div class="ai-panel-content" id="ai-panel-content"></div>
 		</div>
 
+<!-- Preview Panel with Exit Button -->
+<div id="preview-panel" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #ffffff; z-index: 99999; overflow-y: auto;">
+    <button id="preview-exit-btn" data-action="exit-preview" style="position: fixed; top: 15px; right: 15px; z-index: 100000; background: #333; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+        <span class="material-symbols-outlined">close</span>
+    </button>
+    <div id="preview-content" style="max-width: 800px; margin: 0 auto; padding: 60px 20px 20px; line-height: 1.6; color: #000000;"></div>
+</div>
+
+
 
 		<button id="fullscreen-toggle" data-action="exit-focus-mode">
 		    <span class="material-symbols-outlined">close_fullscreen</span>
@@ -35,8 +44,9 @@
 			    <button data-action="local-instructions">Local AI Setup</button>
 			    <button data-action="local-ai">Local AI</button>
 			    <hr style="border-color: var(--mobile-border-color); margin: 6px 0;">
+				<button data-action="open-text-file">Open</button>
+				<button data-action="toggle-preview">Preview</button>
 			    <button data-action="save-as">Save As</button>
-			    <button data-action="open-text-file">Open</button>
 			    <button data-action="share-content">Share</button>
 			    <hr style="border-color: var(--mobile-border-color); margin: 6px 0;">
 				<button data-action="remove-ads" id="remove-ads-btn">Remove Ads</button>
@@ -99,6 +109,29 @@
 		    <div id="file-library-content" style="padding: 8px; overflow-y: auto; height: calc(100% - 50px);"></div>
 		</div>
 		
+		<!-- Formatting Toolbar (appears above footer when Format button clicked) -->
+		<div id="formatting-toolbar" style="display: none; position: fixed; bottom: 48px; left: 0; right: 0; background: var(--mobile-bar-bg); border-top: 1px solid var(--mobile-border-color); padding: 8px; z-index: 24999; overflow-x: auto; white-space: nowrap;">
+		    <button data-action="format-font-increase" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 18px; font-weight: bold;">A+</button>
+		    <button data-action="format-font-decrease" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: bold;">A-</button>
+		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+		    <button data-action="format-bold" style="background: none; border: none; color: var(--mobile-btn-color); font-weight: bold; padding: 8px 12px; cursor: pointer; font-size: 14px;">B</button>
+		    <button data-action="format-italic" style="background: none; border: none; color: var(--mobile-btn-color); font-style: italic; padding: 8px 12px; cursor: pointer; font-size: 14px;">I</button>
+		    <button data-action="format-underline" style="background: none; border: none; color: var(--mobile-btn-color); text-decoration: underline; padding: 8px 12px; cursor: pointer; font-size: 14px;">U</button>
+		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+		  <button id="color-indicator-btn" data-action="format-color" style="background: none; border: none; color: #000000; padding: 8px 12px; cursor: pointer; font-size: 18px;">⬤</button>
+		    <button data-action="format-font" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 12px;">Font</button>
+		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+		    <button data-action="format-heading1" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">H1</button>
+		    <button data-action="format-heading2" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">H2</button>
+		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+		    <button data-action="format-list" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">○</button>
+		    <button data-action="format-numlist" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">1.</button>
+		    <button data-action="format-quote" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">"</button>
+		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+		    <button data-action="format-link" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">🔗</button>
+		    <button data-action="format-code" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px; font-family: monospace;">&lt;/&gt;</button>
+		</div>
+		
 		
 		
 		
@@ -139,20 +172,14 @@
 		            <button data-action="tone-sarcastic">Sarcastic</button>
 		        </div>
 		    </div>
-		    <div class="popup-menu-container">
-		        <button class="popup-menu-toggle" data-menu="format-menu">Format</button>
-		        <div class="popup-menu" id="format-menu">
-		            <button data-action="font-increase">Font +</button>
-		            <button data-action="font-decrease">Font -</button>
-		            <button data-action="format-bold">Bold</button>
-		            <button data-action="format-italic">Italic</button>
-		            <button data-action="format-center">Center</button>
-		            <button data-action="format-list">Number List</button>
-		            <button data-action="format-quote">Quote</button>
+		 <div class="popup-menu-container">
+		     <button class="popup-menu-toggle" data-action="toggle-format-toolbar">Format</button>
 		        </div>
 		    </div>
 		</div>
-
+		
+		<script src="https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/fountain-js@1.2.1/dist/fountain.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 		<style>
 		@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap');
@@ -768,6 +795,59 @@
 		    word-wrap: break-word;
 		    max-height: none;
 		}
+		
+		#preview-content {
+		    color: var(--primary-text-color);
+		}
+
+		#preview-content h1 {
+		    font-size: 32px;
+		    font-weight: bold;
+		    margin: 20px 0;
+		}
+
+		#preview-content h2 {
+		    font-size: 24px;
+		    font-weight: bold;
+		    margin: 18px 0;
+		}
+
+		#preview-content h3 {
+		    font-size: 20px;
+		    font-weight: bold;
+		    margin: 15px 0;
+		}
+
+		#preview-content strong {
+		    font-weight: bold;
+		}
+
+		#preview-content em {
+		    font-style: italic;
+		}
+
+		#preview-content a {
+		    color: #4285F4;
+		    text-decoration: underline;
+		}
+
+		#preview-content blockquote {
+		    border-left: 4px solid #ccc;
+		    padding-left: 15px;
+		    margin: 10px 0;
+		    font-style: italic;
+		}
+
+		#preview-content code {
+		    background: #f4f4f4;
+		    padding: 2px 6px;
+		    border-radius: 3px;
+		    font-family: monospace;
+		}
+
+		#preview-content li {
+		    margin: 5px 0 5px 20px;
+		}
 
 		#file-library, #suggestion {
 		    background-color: var(--mobile-bar-bg);
@@ -1005,6 +1085,7 @@
 		.folder-arrow.collapsed {
 		    transform: rotate(-90deg);
 		}
+		
 		
 		.clickable-link {
 		    color: var(--mobile-btn-color);
@@ -2185,7 +2266,41 @@ function toggleAiPanel() {
 	    }
 	}
 	
-		
+	function toggleFormattingToolbar() {
+	    var toolbar = document.getElementById('formatting-toolbar');
+	    var bottomBar = document.getElementById('mobile-bottom-bar');
+	    var formatBtn = document.querySelector('[data-action="toggle-format-toolbar"]');
+    
+	    if (toolbar.style.display === 'none' || !toolbar.style.display) {
+	        // Show toolbar
+	        toolbar.style.display = 'block';
+	        bottomBar.style.bottom = '0';
+        
+	        // Highlight format button
+	        if (formatBtn) {
+	            formatBtn.style.background = 'rgba(66, 133, 244, 0.15)';
+	            formatBtn.style.color = '#4285F4';
+	        }
+        
+	        // Update editor padding
+	        editor.style.paddingBottom = 'calc(var(--footer-height) * var(--display-scale) + var(--keyboard-height) + 100px)';
+	    } else {
+	        // Hide toolbar
+	        toolbar.style.display = 'none';
+        
+	        // Remove highlight from format button
+	        if (formatBtn) {
+	            formatBtn.style.background = 'transparent';
+	            formatBtn.style.color = 'var(--mobile-btn-color)';
+	        }
+        
+	        // Restore editor padding
+	        editor.style.paddingBottom = 'calc(var(--footer-height) * var(--display-scale) + var(--keyboard-height) + 60px)';
+	    }
+	}
+
+	window.toggleFormattingToolbar = toggleFormattingToolbar;
+	
 
 		function customAlert(title, message) {
 		    showCustomAlert(title, message);
@@ -2908,49 +3023,33 @@ function toggleAiPanel() {
 				        docActions.style.display = 'none';
 				    };
     
-				    // Mobile: Single tap shows buttons, second tap (when buttons visible) opens doc
-				    var lastTap = 0;
-				    fileItem.onclick = function(e) {
-				        if (e.target.closest('button')) return;
-        
-				        var now = Date.now();
-				        var timeDiff = now - lastTap;
-        
-				        // If buttons are visible and tapping again within 600ms, open doc
-				        if (docActions.style.display === 'flex' && timeDiff < 600) {
-				            currentDocumentId = file.id;
-				            currentTags = file.tags || [];
-				            currentFolder = file.folder || 'All Documents';
-				            editor.innerHTML = file.content;
-				            document.body.classList.remove('library-visible');
-				            history = [editor.innerHTML];
-				            historyIndex = 0;
-				        } else {
-				            // First tap or after timeout: toggle buttons
-				            if (docActions.style.display === 'none' || !docActions.style.display) {
-				                // Hide all other doc buttons first
-				                var allDocActions = document.querySelectorAll('.doc-actions');
-				                allDocActions.forEach(function(action) {
-				                    action.style.display = 'none';
-				                });
-				                // Show this one
-				                docActions.style.display = 'flex';
-				            } else {
-				                // Hide if already visible
-				                docActions.style.display = 'none';
-				            }
-				        }
-        
-				        lastTap = now;
-				    };
+					// Single click opens document directly
+					fileItem.onclick = function(e) {
+					    if (e.target.closest('button')) return;
     
-				    folderContentDiv.appendChild(fileItem);
-				});
-		        
-        
-		        fileLibraryContent.appendChild(folderContentDiv);
-		    });
+					    currentDocumentId = file.id;
+					    currentTags = file.tags || [];
+					    currentFolder = file.folder || 'All Documents';
+					    editor.innerHTML = file.content;
+					    document.body.classList.remove('library-visible');
     
+					    // Reset preview if it was open
+					    var previewPanel = document.getElementById('preview-panel');
+					    if (previewPanel) {
+					        previewPanel.style.display = 'none';
+					    }
+					    editor.style.display = 'block';
+    
+					    history = [editor.innerHTML];
+					    historyIndex = 0;
+					};
+
+					folderContentDiv.appendChild(fileItem);
+					});
+
+					fileLibraryContent.appendChild(folderContentDiv);
+					});
+				
 		    // Document summary at bottom
 		    var summaryDiv = document.createElement('div');
 		    summaryDiv.style.cssText = 'padding: 15px; text-align: center; color: var(--secondary-text-color); font-size: 12px; border-top: 1px solid var(--mobile-border-color); background: var(--modal-bg);';
@@ -3218,6 +3317,234 @@ function toggleAiPanel() {
 		}
 
 		window.exportFolderAsBook = exportFolderAsBook;
+		
+		
+		var currentColor = '#000000'; // Track current color
+		
+		function showColorPicker() {
+		    var colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000', '#FF1493', '#4B0082', '#8B4513', '#2F4F4F', '#DC143C', '#4169E1'];
+		    var html = '<div style="padding: 15px;">';
+    
+		    // Color grid
+		    html += '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">';
+		    colors.forEach(function(color) {
+		        var isActive = color === currentColor ? 'border: 3px solid #4285F4;' : 'border: 2px solid var(--mobile-border-color);';
+		        html += '<button onclick="setDefaultColor(\'' + color + '\')" style="width: 50px; height: 50px; background: ' + color + '; ' + isActive + ' border-radius: 8px; cursor: pointer;"></button>';
+		    });
+		    html += '</div>';
+    
+		    // Custom color section with label
+		    html += '<div style="border-top: 1px solid var(--mobile-border-color); padding-top: 15px;">';
+		    html += '<label style="display: block; margin-bottom: 10px; font-weight: 600; font-size: 14px;">Custom Color</label>';
+		    html += '<div style="display: flex; gap: 10px; align-items: center;">';
+		    html += '<label for="custom-color-picker" style="flex: 1; padding: 12px; background: var(--modal-bg); border: 2px dashed var(--mobile-border-color); border-radius: 8px; text-align: center; cursor: pointer; font-size: 13px;">🎨 Click to Pick Color</label>';
+		    html += '<input type="color" id="custom-color-picker" value="' + currentColor + '" onchange="document.getElementById(\'custom-preview\').style.background = this.value" style="opacity: 0; width: 0; height: 0;">';
+		    html += '<div id="custom-preview" style="width: 50px; height: 50px; background: ' + currentColor + '; border: 2px solid var(--mobile-border-color); border-radius: 8px;"></div>';
+		    html += '</div>';
+		    html += '<button onclick="setDefaultColor(document.getElementById(\'custom-color-picker\').value)" style="width: 100%; margin-top: 12px; padding: 12px; background: #4285F4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Apply Color</button>';
+		    html += '</div>';
+    
+		    html += '</div>';
+		    showModal('Choose Color', html);
+		}
+		
+
+		function setDefaultColor(color) {
+		    currentColor = color;
+		    editor.style.color = color;
+		    localStorage.setItem('defaultColor', color);
+    
+		    // Update button color
+		    var colorBtn = document.getElementById('color-indicator-btn');
+		    if (colorBtn) {
+		        colorBtn.style.color = color;
+		    }
+    
+		    hideModal();
+		    editor.focus();
+		}
+		
+
+		// Load saved color on startup
+		// Load and apply saved color on startup
+		var savedColor = localStorage.getItem('defaultColor');
+		if (savedColor) {
+		    currentColor = savedColor;
+		    editor.style.color = savedColor;
+    
+		    // Update button when formatting toolbar exists
+		    setTimeout(function() {
+		        var colorBtn = document.getElementById('color-indicator-btn');
+		        if (colorBtn) {
+		            colorBtn.style.color = savedColor;
+		        }
+		    }, 100);
+		}
+		
+
+		window.showColorPicker = showColorPicker;
+		window.setDefaultColor = setDefaultColor;
+		
+		var currentFont = 'Courier New'; // Track current font
+
+		function showFontPicker() {
+		    var fonts = ['Arial', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Comic Sans MS', 'Trebuchet MS', 'Impact', 'Palatino', 'Garamond'];
+		    var html = '<div style="padding: 10px; max-height: 400px; overflow-y: auto;">';
+		    fonts.forEach(function(font) {
+		        var isActive = font === currentFont ? ' style="background: #4285F4; color: white;"' : '';
+		        html += '<button onclick="setDefaultFont(\'' + font + '\')"' + isActive + ' style="display: block; width: 100%; padding: 12px; margin: 5px 0; font-family: \'' + font + '\'; text-align: left; border: 1px solid var(--mobile-border-color); border-radius: 6px; cursor: pointer;">' + font + '</button>';
+		    });
+		    html += '</div>';
+		    showModal('Choose Font', html);
+		}
+
+		function setDefaultFont(fontName) {
+		    currentFont = fontName;
+		    editor.style.fontFamily = fontName;
+		    localStorage.setItem('defaultFont', fontName);
+		    hideModal();
+		    editor.focus();
+		}
+
+		// Load saved font on startup
+		var savedFont = localStorage.getItem('defaultFont');
+		if (savedFont) {
+		    currentFont = savedFont;
+		    editor.style.fontFamily = savedFont;
+		}
+
+		window.showFontPicker = showFontPicker;
+		window.setDefaultFont = setDefaultFont;
+		
+		
+		// Offline fallback parsers
+		function parseMarkdownOffline(text) {
+		    return text
+		        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+		        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+		        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+		        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+		        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+		        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+		        .replace(/~~(.*?)~~/g, '<del>$1</del>')
+		        .replace(/`(.*?)`/g, '<code>$1</code>')
+		        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
+		        .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+		        .replace(/^\* (.*$)/gim, '<li>$1</li>')
+		        .replace(/^\- (.*$)/gim, '<li>$1</li>')
+		        .replace(/^\d+\. (.*$)/gim, '<li>$1</li>')
+		        .replace(/\n/g, '<br>');
+		}
+		
+
+		function parseFountainOffline(text) {
+		    var lines = text.split('\n');
+		    var html = '<div style="font-family: Courier, monospace; max-width: 600px; margin: 0 auto;">';
+    
+		    for (var i = 0; i < lines.length; i++) {
+		        var line = lines[i].trim();
+        
+		        if (!line) {
+		            html += '<br>';
+		            continue;
+		        }
+        
+		        // Scene headings
+		        if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/i.test(line)) {
+		            html += '<div style="font-weight: bold; text-transform: uppercase; margin: 20px 0 10px;">' + line + '</div>';
+		        }
+		        // Character names (all caps, centered)
+		        else if (/^[A-Z\s\(\)]+$/.test(line) && line.length < 40) {
+		            html += '<div style="margin: 20px 0 5px 200px; font-weight: 600;">' + line + '</div>';
+		        }
+		        // Parentheticals
+		        else if (/^\(.*\)$/.test(line)) {
+		            html += '<div style="margin: 0 0 5px 170px; font-style: italic;">(' + line.slice(1, -1) + ')</div>';
+		        }
+		        // Dialogue
+		        else if (i > 0 && /^[A-Z\s\(\)]+$/.test(lines[i-1].trim())) {
+		            html += '<div style="margin: 0 0 15px 150px; max-width: 350px;">' + line + '</div>';
+		        }
+		        // Action/Description
+		        else {
+		            html += '<div style="margin: 10px 0;">' + line + '</div>';
+		        }
+		    }
+    
+		    html += '</div>';
+		    return html;
+		}
+
+		function detectFormat(text) {
+		    // Count markdown indicators
+		    var markdownScore = 0;
+		    if (/^#{1,6}\s/m.test(text)) markdownScore += 2;
+		    if (/\*\*.*?\*\*/.test(text)) markdownScore += 1;
+		    if (/\*.*?\*/.test(text)) markdownScore += 1;
+		    if (/\[.*?\]\(.*?\)/.test(text)) markdownScore += 2;
+		    if (/^[\*\-]\s/m.test(text)) markdownScore += 1;
+    
+		    // Count fountain indicators
+		    var fountainScore = 0;
+		    if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/im.test(text)) fountainScore += 3;
+		    if (/^[A-Z\s]{2,}$/m.test(text)) fountainScore += 1;
+    
+		    // Return format with higher score
+		    if (fountainScore > markdownScore) return 'fountain';
+		    if (markdownScore > 0) return 'markdown';
+		    return 'plain';
+		}
+
+		window.detectFormat = detectFormat;
+		
+		window.parseMarkdownOffline = parseMarkdownOffline;
+		window.parseFountainOffline = parseFountainOffline;
+		window.detectFormat = detectFormat;
+		
+		function togglePreview() {
+		    var previewPanel = document.getElementById('preview-panel');
+		    var previewContent = document.getElementById('preview-content');
+		    var bottomBar = document.getElementById('mobile-bottom-bar');
+		    var topBar = document.getElementById('mobile-top-bar');
+    
+		    if (previewPanel.style.display === 'none') {
+		        var text = editor.innerText || editor.textContent;
+		        var html = '';
+        
+		        // Apply markdown first (handles bold, italic, links, headers)
+		        if (typeof marked !== 'undefined') {
+		            html = marked.parse(text);
+		        } else {
+		            html = parseMarkdownOffline(text);
+		        }
+        
+		        // Then apply fountain formatting on top (for screenplay structure)
+		        if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/im.test(text)) {
+		            html = parseFountainOffline(text);
+		        }
+        
+		        previewContent.innerHTML = html;
+		        editor.style.display = 'none';
+		        previewPanel.style.display = 'block';
+		        bottomBar.style.display = 'none';
+		        topBar.style.display = 'none';
+		        document.body.classList.remove('library-visible');
+		    } else {
+		        previewPanel.style.display = 'none';
+		        editor.style.display = 'block';
+		        bottomBar.style.display = 'flex';
+		        topBar.style.display = 'flex';
+		    }
+		}
+
+		window.togglePreview = togglePreview;
+		
+		
+		
+		
+		
+		
+		
 		
 
 		function getWorkingPrompt(task, textToProcess, customInstruction) {
@@ -4581,6 +4908,13 @@ function toggleAiPanel() {
 				                           window.TaskModelBridge.onFocusModeChanged(false);
 				                       }
 				                   } else {
+									   
+							   // ENTERING FULLSCREEN - Hide formatting toolbar first
+							           var toolbar = document.getElementById('formatting-toolbar');
+							           if (toolbar) {
+							               toolbar.style.display = 'none';
+							           }
+									   
 				                       // ENTERING FULLSCREEN - Hide AI panel first, then footer
 				                       if (aiTopPanel.classList.contains('show')) {
 				                           hideAiPanel();
@@ -4653,6 +4987,8 @@ function toggleAiPanel() {
 		            darkModeIcon.textContent = document.body.classList.contains('dark-mode') ? 'dark_mode' : 'light_mode';
 		            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
 		            break;
+					
+					
 		        case 'format-bold':
 		            document.execCommand('bold');
 		            updateEditorState();
@@ -4665,25 +5001,106 @@ function toggleAiPanel() {
 		            document.execCommand('justifyCenter');
 		            updateEditorState();
 		            break;
-		        case 'format-list':
-		            document.execCommand('insertOrderedList');
-		            updateEditorState();
-		            break;
+		     
 		        case 'format-quote':
 		            document.execCommand('formatBlock', false, 'blockquote');
 		            updateEditorState();
 		            break;
-					case 'font-increase':
-					    if (currentFontSize < 32) {
-					        updateEditorFontSize(currentFontSize + 2);
+					
+				case 'format-font-increase':
+				    if (currentFontSize < 32) {
+				        updateEditorFontSize(currentFontSize + 2);
+				    }
+				    break;
+				case 'format-font-decrease':
+				    if (currentFontSize > 12) {
+				        updateEditorFontSize(currentFontSize - 2);
+				    }
+				    break;
+					
+						
+					case 'toggle-format-toolbar':
+					    toggleFormattingToolbar();
+					    break;
+					case 'format-underline':
+					    document.execCommand('underline');
+					    updateEditorState();
+					    break;
+					case 'format-heading1':
+					    document.execCommand('formatBlock', false, 'H1');
+					    updateEditorState();
+					    break;
+					case 'format-heading2':
+					    document.execCommand('formatBlock', false, 'H2');
+					    updateEditorState();
+					    break;
+					case 'format-numlist':
+					    document.execCommand('insertOrderedList');
+					    updateEditorState();
+					    break;
+					case 'format-code':
+					    document.execCommand('formatBlock', false, 'PRE');
+					    updateEditorState();
+					    break;
+					case 'format-link':
+					    var selection = window.getSelection();
+					    if (selection.toString()) {
+					        customPrompt('Insert Link', 'Enter URL:', 'https://').then(function(url) {
+					            if (url) {
+					                document.execCommand('createLink', false, url);
+					                updateEditorState();
+					            }
+					        });
+					    } else {
+					        showCustomAlert('No Selection', 'Please select text first');
 					    }
 					    break;
-
-					case 'font-decrease': 
-					    if (currentFontSize > 12) {
-					        updateEditorFontSize(currentFontSize - 2);
+						
+					case 'format-color':
+					    showColorPicker();
+					    break;
+					case 'format-font':
+					    showFontPicker();
+					    break;
+					
+						
+					case 'format-list':
+					    document.execCommand('insertUnorderedList');
+					    updateEditorState();
+					    break;
+						
+						
+					case 'format-numlist':
+					    document.execCommand('insertOrderedList');
+					    updateEditorState();
+					    break;
+						
+						
+					case 'toggle-preview':
+					    togglePreview();
+					    document.body.classList.remove('library-visible');
+					    break;
+					case 'exit-preview':
+					    var previewPanel = document.getElementById('preview-panel');
+					    var bottomBar = document.getElementById('mobile-bottom-bar');
+					    var topBar = document.getElementById('mobile-top-bar');
+					    var fullscreenBtn = document.getElementById('fullscreen-toggle');
+    
+					    // Hide preview and show editor
+					    previewPanel.style.display = 'none';
+					    editor.style.display = 'block';
+    
+					    document.body.classList.remove('focus-mode');
+					    bottomBar.style.display = 'flex';
+					    topBar.style.display = 'flex';
+    
+					    if (fullscreenBtn) {
+					        fullscreenBtn.setAttribute('data-action', 'toggle-focus');
+					        fullscreenBtn.querySelector('span').textContent = 'fullscreen';
 					    }
 					    break;
+					
+					
 			
 		        case 'save-txt':
 		            var text = editor.innerText;
