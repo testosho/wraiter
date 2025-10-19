@@ -1400,6 +1400,8 @@
 		var aiTopPanel = document.getElementById('ai-top-panel');
 		var aiPanelContent = document.getElementById('ai-panel-content');
 		var aiStatusBtn = document.getElementById('ai-status-btn');
+		var selectedFolderForNewDoc = 'All Documents';
+		
 
 		var floatingToolbar = new FloatingToolbar();
 		window.floatingToolbar = floatingToolbar;
@@ -2471,6 +2473,7 @@ function toggleAiPanel() {
 
 		function createNewDocument() {
 		    currentDocumentId = generateId();
+		    currentFolder = selectedFolderForNewDoc; // Use selected folder
 		    editor.innerHTML = '';
 		    editor.focus();
 		    history = [''];
@@ -2480,9 +2483,11 @@ function toggleAiPanel() {
 		        content: '',
 		        text: '',
 		        title: 'New Document',
-		        lastModified: new Date().toISOString()
+		        lastModified: new Date().toISOString(),
+		        folder: currentFolder // Save in selected folder
 		    });
 		}
+		
 		
 		function getAllTags() {
 		    var files = getAllFiles();
@@ -2907,18 +2912,29 @@ function toggleAiPanel() {
 		        folderContentDiv.className = 'folder-content';
         
 		        // Toggle folder on click (only when clicking title, not buttons)
-		        folderHeader.onclick = function(e) {
-		            if (e.target.closest('button')) return; // Don't toggle if clicking buttons
-            
-		            var arrow = folderTitle.querySelector('.folder-arrow');
-		            if (folderContentDiv.classList.contains('collapsed')) {
-		                folderContentDiv.classList.remove('collapsed');
-		                arrow.classList.remove('collapsed');
-		            } else {
-		                folderContentDiv.classList.add('collapsed');
-		                arrow.classList.add('collapsed');
-		            }
-		        };
+				folderHeader.onclick = function(e) {
+				    if (e.target.closest('button')) return;
+    
+				    // Toggle folder collapse
+				    var arrow = folderTitle.querySelector('.folder-arrow');
+				    if (folderContentDiv.classList.contains('collapsed')) {
+				        folderContentDiv.classList.remove('collapsed');
+				        arrow.classList.remove('collapsed');
+				    } else {
+				        folderContentDiv.classList.add('collapsed');
+				        arrow.classList.add('collapsed');
+				    }
+    
+				    // Select this folder for new documents
+				    selectedFolderForNewDoc = folderName;
+    
+				    // Highlight selected folder
+				    document.querySelectorAll('[data-folder]').forEach(function(fh) {
+				        fh.style.background = 'var(--modal-bg)';
+				    });
+				    this.style.background = 'rgba(66, 133, 244, 0.1)';
+				};
+		       
         
 		        // Make folder header a drop zone for drag-and-drop
 		        folderHeader.setAttribute('draggable', 'false');
@@ -2943,7 +2959,6 @@ function toggleAiPanel() {
         
 		        fileLibraryContent.appendChild(folderHeader);
         
-		        // Files in this folder with drag support and hover actions
 				// Files in this folder with drag support and touch-friendly actions
 				folderFiles.forEach(function(file) {
 				    var fileItem = document.createElement('div');
@@ -3015,14 +3030,45 @@ function toggleAiPanel() {
     
 				    fileItem.appendChild(docActions);
     
-				    // Desktop: Show buttons on hover
-				    fileItem.onmouseenter = function() {
-				        docActions.style.display = 'flex';
-				    };
-				    fileItem.onmouseleave = function() {
-				        docActions.style.display = 'none';
-				    };
+					// Show edit/delete buttons on desktop hover
+					fileItem.onmouseenter = function() {
+					    docActions.style.display = 'flex';
+					};
+					fileItem.onmouseleave = function() {
+					    docActions.style.display = 'none';
+					};
+
+					// Mobile: Long press or tap to show buttons
+					fileItem.onclick = function(e) {
+					    if (e.target.closest('button')) return;
     
+					    // Toggle buttons on/off
+					    if (docActions.style.display === 'none' || !docActions.style.display) {
+					        // Hide all others first
+					        var allDocActions = document.querySelectorAll('.doc-actions');
+					        allDocActions.forEach(function(action) {
+					            action.style.display = 'none';
+					        });
+					        docActions.style.display = 'flex';
+					    } else {
+					        // Open document if buttons already visible
+					        currentDocumentId = file.id;
+					        currentTags = file.tags || [];
+					        currentFolder = file.folder || 'All Documents';
+					        editor.innerHTML = file.content;
+					        document.body.classList.remove('library-visible');
+        
+					        var previewPanel = document.getElementById('preview-panel');
+					        if (previewPanel) {
+					            previewPanel.style.display = 'none';
+					        }
+					        editor.style.display = 'block';
+        
+					        history = [editor.innerHTML];
+					        historyIndex = 0;
+					    }
+					};
+				    
 					// Single click opens document directly
 					fileItem.onclick = function(e) {
 					    if (e.target.closest('button')) return;
