@@ -2900,50 +2900,24 @@ function toggleAiPanel() {
     
 				    fileItem.appendChild(docActions);
     
-				    // Track if buttons are visible
-				    var buttonsVisible = false;
-    
 				    // Desktop: Show buttons on hover
 				    fileItem.onmouseenter = function() {
 				        docActions.style.display = 'flex';
-				        buttonsVisible = true;
 				    };
 				    fileItem.onmouseleave = function() {
 				        docActions.style.display = 'none';
-				        buttonsVisible = false;
 				    };
     
-				    // Mobile: Toggle buttons on tap, open doc on double tap
-				    var tapCount = 0;
-				    var tapTimer;
-    
+				    // Mobile: Single tap shows buttons, second tap (when buttons visible) opens doc
+				    var lastTap = 0;
 				    fileItem.onclick = function(e) {
 				        if (e.target.closest('button')) return;
         
-				        tapCount++;
+				        var now = Date.now();
+				        var timeDiff = now - lastTap;
         
-				        if (tapCount === 1) {
-				            // First tap: Show buttons
-				            tapTimer = setTimeout(function() {
-				                if (buttonsVisible) {
-				                    // If buttons already visible, open document
-				                    currentDocumentId = file.id;
-				                    currentTags = file.tags || [];
-				                    currentFolder = file.folder || 'All Documents';
-				                    editor.innerHTML = file.content;
-				                    document.body.classList.remove('library-visible');
-				                    history = [editor.innerHTML];
-				                    historyIndex = 0;
-				                } else {
-				                    // Show buttons
-				                    docActions.style.display = 'flex';
-				                    buttonsVisible = true;
-				                }
-				                tapCount = 0;
-				            }, 300);
-				        } else if (tapCount === 2) {
-				            // Double tap: Open document immediately
-				            clearTimeout(tapTimer);
+				        // If buttons are visible and tapping again within 600ms, open doc
+				        if (docActions.style.display === 'flex' && timeDiff < 600) {
 				            currentDocumentId = file.id;
 				            currentTags = file.tags || [];
 				            currentFolder = file.folder || 'All Documents';
@@ -2951,21 +2925,31 @@ function toggleAiPanel() {
 				            document.body.classList.remove('library-visible');
 				            history = [editor.innerHTML];
 				            historyIndex = 0;
-				            tapCount = 0;
+				        } else {
+				            // First tap or after timeout: toggle buttons
+				            if (docActions.style.display === 'none' || !docActions.style.display) {
+				                // Hide all other doc buttons first
+				                var allDocActions = document.querySelectorAll('.doc-actions');
+				                allDocActions.forEach(function(action) {
+				                    action.style.display = 'none';
+				                });
+				                // Show this one
+				                docActions.style.display = 'flex';
+				            } else {
+				                // Hide if already visible
+				                docActions.style.display = 'none';
+				            }
 				        }
+        
+				        lastTap = now;
 				    };
-    
-				    // Hide buttons when tapping outside
-				    document.addEventListener('click', function(e) {
-				        if (!fileItem.contains(e.target)) {
-				            docActions.style.display = 'none';
-				            buttonsVisible = false;
-				        }
-				    });
     
 				    folderContentDiv.appendChild(fileItem);
 				});
 		        
+        
+		        fileLibraryContent.appendChild(folderContentDiv);
+		    });
     
 		    // Document summary at bottom
 		    var summaryDiv = document.createElement('div');
@@ -5400,41 +5384,6 @@ function toggleAiPanel() {
 
 		console.log('🚀 Wraiter v3 - Enhanced Experience');
 		});
-		
-		
-		// Enable mobile drag and drop
-		var draggedElement = null;
-		var draggedDocId = null;
-
-		document.addEventListener('touchstart', function(e) {
-		    var target = e.target.closest('[data-doc-id]');
-		    if (target) {
-		        draggedElement = target;
-		        draggedDocId = target.getAttribute('data-doc-id');
-		        target.style.opacity = '0.5';
-		    }
-		}, { passive: true });
-
-		document.addEventListener('touchend', function(e) {
-		    if (draggedElement) {
-		        draggedElement.style.opacity = '1';
-        
-		        var dropTarget = document.elementFromPoint(
-		            e.changedTouches[0].clientX,
-		            e.changedTouches[0].clientY
-		        );
-        
-		        var folderHeader = dropTarget ? dropTarget.closest('[data-folder]') : null;
-		        if (folderHeader && draggedDocId) {
-		            var folderName = folderHeader.getAttribute('data-folder');
-		            moveDocumentToFolder(draggedDocId, folderName);
-		        }
-        
-		        draggedElement = null;
-		        draggedDocId = null;
-		    }
-		}, { passive: true });
-		
 
 		</script>
 		</body>
