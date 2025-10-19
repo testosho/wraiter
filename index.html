@@ -2829,100 +2829,143 @@ function toggleAiPanel() {
 		        fileLibraryContent.appendChild(folderHeader);
         
 		        // Files in this folder with drag support and hover actions
-		        folderFiles.forEach(function(file) {
-		            var fileItem = document.createElement('div');
-		            fileItem.style.cssText = 'padding: 12px 15px; border-bottom: 1px solid var(--mobile-border-color); cursor: move; background: var(--modal-bg); position: relative;';
-		            fileItem.setAttribute('draggable', 'true');
-		            fileItem.setAttribute('data-doc-id', file.id);
-            
-		            // Drag events
-		            fileItem.ondragstart = function(e) {
-		                e.dataTransfer.setData('docId', file.id);
-		                this.style.opacity = '0.5';
-		            };
-		            fileItem.ondragend = function(e) {
-		                this.style.opacity = '1';
-		            };
-            
-		            var contentDiv = document.createElement('div');
-		            contentDiv.style.paddingRight = '80px';
-            
-		            var titleDiv = document.createElement('div');
-		            titleDiv.style.cssText = 'font-weight: 500; font-size: 15px; color: var(--primary-text-color); margin-bottom: 4px;';
-		            titleDiv.textContent = file.title;
-		            contentDiv.appendChild(titleDiv);
-            
-		            var metaDiv = document.createElement('div');
-		            metaDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
-            
-		            if (file.tags && file.tags.length > 0) {
-		                file.tags.forEach(function(tag) {
-		                    var tagSpan = document.createElement('span');
-		                    tagSpan.textContent = '#' + tag;
-		                    tagSpan.style.cssText = 'background: #E8F5E9; color: #2E7D32; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;';
-		                    metaDiv.appendChild(tagSpan);
-		                });
-		            }
-            
-		            var dateSpan = document.createElement('span');
-		            dateSpan.style.cssText = 'font-size: 12px; color: var(--secondary-text-color);';
-		            dateSpan.textContent = new Date(file.lastModified).toLocaleDateString();
-		            metaDiv.appendChild(dateSpan);
-            
-		            contentDiv.appendChild(metaDiv);
-		            fileItem.appendChild(contentDiv);
-            
-		            // Document action buttons (hidden by default, show on hover)
-		            var docActions = document.createElement('div');
-		            docActions.style.cssText = 'position: absolute; top: 12px; right: 12px; display: none; gap: 6px;';
-		            docActions.className = 'doc-actions';
-            
-		            var editBtn = document.createElement('button');
-		            editBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">edit</span>';
-		            editBtn.style.cssText = 'background: #4285F4; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 4px 8px;';
-		            editBtn.title = 'Edit Title';
-		            editBtn.onclick = function(e) {
-		                e.stopPropagation();
-		                editDocumentTitle(file.id);
-		            };
-		            docActions.appendChild(editBtn);
-            
-		            var deleteBtn = document.createElement('button');
-		            deleteBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">delete</span>';
-		            deleteBtn.style.cssText = 'background: #EF4444; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 4px 8px;';
-		            deleteBtn.title = 'Delete Document';
-		            deleteBtn.onclick = function(e) {
-		                e.stopPropagation();
-		                deleteFile(file.id);
-		            };
-		            docActions.appendChild(deleteBtn);
-            
-		            fileItem.appendChild(docActions);
-            
-		            // Show buttons on hover
-		            fileItem.onmouseenter = function() {
-		                docActions.style.display = 'flex';
-		            };
-		            fileItem.onmouseleave = function() {
-		                docActions.style.display = 'none';
-		            };
-            
-		            fileItem.onclick = function(e) {
-		                if (e.target.closest('button')) return;
-		                currentDocumentId = file.id;
-		                currentTags = file.tags || [];
-		                currentFolder = file.folder || 'All Documents';
-		                editor.innerHTML = file.content;
-		                document.body.classList.remove('library-visible');
-		                history = [editor.innerHTML];
-		                historyIndex = 0;
-		            };
-            
-		            folderContentDiv.appendChild(fileItem);
-		        });
+				// Files in this folder with drag support and touch-friendly actions
+				folderFiles.forEach(function(file) {
+				    var fileItem = document.createElement('div');
+				    fileItem.style.cssText = 'padding: 12px 15px; border-bottom: 1px solid var(--mobile-border-color); cursor: pointer; background: var(--modal-bg); position: relative;';
+				    fileItem.setAttribute('draggable', 'true');
+				    fileItem.setAttribute('data-doc-id', file.id);
+    
+				    // Drag events (works on desktop only)
+				    fileItem.ondragstart = function(e) {
+				        e.dataTransfer.setData('docId', file.id);
+				        this.style.opacity = '0.5';
+				    };
+				    fileItem.ondragend = function(e) {
+				        this.style.opacity = '1';
+				    };
+    
+				    var contentDiv = document.createElement('div');
+				    contentDiv.style.paddingRight = '80px';
+    
+				    var titleDiv = document.createElement('div');
+				    titleDiv.style.cssText = 'font-weight: 500; font-size: 15px; color: var(--primary-text-color); margin-bottom: 4px;';
+				    titleDiv.textContent = file.title;
+				    contentDiv.appendChild(titleDiv);
+    
+				    var metaDiv = document.createElement('div');
+				    metaDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; flex-wrap: wrap;';
+    
+				    if (file.tags && file.tags.length > 0) {
+				        file.tags.forEach(function(tag) {
+				            var tagSpan = document.createElement('span');
+				            tagSpan.textContent = '#' + tag;
+				            tagSpan.style.cssText = 'background: #E8F5E9; color: #2E7D32; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;';
+				            metaDiv.appendChild(tagSpan);
+				        });
+				    }
+    
+				    var dateSpan = document.createElement('span');
+				    dateSpan.style.cssText = 'font-size: 12px; color: var(--secondary-text-color);';
+				    dateSpan.textContent = new Date(file.lastModified).toLocaleDateString();
+				    metaDiv.appendChild(dateSpan);
+    
+				    contentDiv.appendChild(metaDiv);
+				    fileItem.appendChild(contentDiv);
+    
+				    // Document action buttons (hidden by default)
+				    var docActions = document.createElement('div');
+				    docActions.style.cssText = 'position: absolute; top: 12px; right: 12px; display: none; gap: 6px;';
+				    docActions.className = 'doc-actions';
+    
+				    var editBtn = document.createElement('button');
+				    editBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">edit</span>';
+				    editBtn.style.cssText = 'background: #4285F4; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 4px 8px;';
+				    editBtn.title = 'Edit Title';
+				    editBtn.onclick = function(e) {
+				        e.stopPropagation();
+				        editDocumentTitle(file.id);
+				    };
+				    docActions.appendChild(editBtn);
+    
+				    var deleteBtn = document.createElement('button');
+				    deleteBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">delete</span>';
+				    deleteBtn.style.cssText = 'background: #EF4444; color: white; border: none; border-radius: 4px; cursor: pointer; padding: 4px 8px;';
+				    deleteBtn.title = 'Delete Document';
+				    deleteBtn.onclick = function(e) {
+				        e.stopPropagation();
+				        deleteFile(file.id);
+				    };
+				    docActions.appendChild(deleteBtn);
+    
+				    fileItem.appendChild(docActions);
+    
+				    // Track if buttons are visible
+				    var buttonsVisible = false;
+    
+				    // Desktop: Show buttons on hover
+				    fileItem.onmouseenter = function() {
+				        docActions.style.display = 'flex';
+				        buttonsVisible = true;
+				    };
+				    fileItem.onmouseleave = function() {
+				        docActions.style.display = 'none';
+				        buttonsVisible = false;
+				    };
+    
+				    // Mobile: Toggle buttons on tap, open doc on double tap
+				    var tapCount = 0;
+				    var tapTimer;
+    
+				    fileItem.onclick = function(e) {
+				        if (e.target.closest('button')) return;
         
-		        fileLibraryContent.appendChild(folderContentDiv);
-		    });
+				        tapCount++;
+        
+				        if (tapCount === 1) {
+				            // First tap: Show buttons
+				            tapTimer = setTimeout(function() {
+				                if (buttonsVisible) {
+				                    // If buttons already visible, open document
+				                    currentDocumentId = file.id;
+				                    currentTags = file.tags || [];
+				                    currentFolder = file.folder || 'All Documents';
+				                    editor.innerHTML = file.content;
+				                    document.body.classList.remove('library-visible');
+				                    history = [editor.innerHTML];
+				                    historyIndex = 0;
+				                } else {
+				                    // Show buttons
+				                    docActions.style.display = 'flex';
+				                    buttonsVisible = true;
+				                }
+				                tapCount = 0;
+				            }, 300);
+				        } else if (tapCount === 2) {
+				            // Double tap: Open document immediately
+				            clearTimeout(tapTimer);
+				            currentDocumentId = file.id;
+				            currentTags = file.tags || [];
+				            currentFolder = file.folder || 'All Documents';
+				            editor.innerHTML = file.content;
+				            document.body.classList.remove('library-visible');
+				            history = [editor.innerHTML];
+				            historyIndex = 0;
+				            tapCount = 0;
+				        }
+				    };
+    
+				    // Hide buttons when tapping outside
+				    document.addEventListener('click', function(e) {
+				        if (!fileItem.contains(e.target)) {
+				            docActions.style.display = 'none';
+				            buttonsVisible = false;
+				        }
+				    });
+    
+				    folderContentDiv.appendChild(fileItem);
+				});
+		        
     
 		    // Document summary at bottom
 		    var summaryDiv = document.createElement('div');
@@ -5357,6 +5400,41 @@ function toggleAiPanel() {
 
 		console.log('🚀 Wraiter v3 - Enhanced Experience');
 		});
+		
+		
+		// Enable mobile drag and drop
+		var draggedElement = null;
+		var draggedDocId = null;
+
+		document.addEventListener('touchstart', function(e) {
+		    var target = e.target.closest('[data-doc-id]');
+		    if (target) {
+		        draggedElement = target;
+		        draggedDocId = target.getAttribute('data-doc-id');
+		        target.style.opacity = '0.5';
+		    }
+		}, { passive: true });
+
+		document.addEventListener('touchend', function(e) {
+		    if (draggedElement) {
+		        draggedElement.style.opacity = '1';
+        
+		        var dropTarget = document.elementFromPoint(
+		            e.changedTouches[0].clientX,
+		            e.changedTouches[0].clientY
+		        );
+        
+		        var folderHeader = dropTarget ? dropTarget.closest('[data-folder]') : null;
+		        if (folderHeader && draggedDocId) {
+		            var folderName = folderHeader.getAttribute('data-folder');
+		            moveDocumentToFolder(draggedDocId, folderName);
+		        }
+        
+		        draggedElement = null;
+		        draggedDocId = null;
+		    }
+		}, { passive: true });
+		
 
 		</script>
 		</body>
