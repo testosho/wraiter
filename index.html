@@ -1468,32 +1468,42 @@
 		// ============================================
 
 		// Custom Text Selection Menu - MOBILE OPTIMIZED
+		// Custom Text Selection Menu - COMPLETE WORKING VERSION
 		var customSelectionMenu = {
 		    menuElement: null,
 		    isInteracting: false,
 		    hideTimeout: null,
     
 		    init: function() {
+		        var self = this;
+        
 		        // Create the custom menu
 		        this.menuElement = document.createElement('div');
 		        this.menuElement.id = 'custom-selection-menu';
+        
+		        // Detect if mobile
+		        var isMobile = window.innerWidth < 768;
+        
 		        this.menuElement.style.cssText = `
 		            position: fixed;
 		            display: none;
 		            background: #1F2937;
-		            border-radius: 12px;
-		            padding: 8px;
+		            border-radius: ${isMobile ? '10px' : '12px'};
+		            padding: ${isMobile ? '6px' : '8px'};
 		            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 		            z-index: 999999;
-		            flex-wrap: nowrap;
-		            gap: 4px;
+		            flex-wrap: ${isMobile ? 'wrap' : 'nowrap'};
+		            gap: ${isMobile ? '4px' : '6px'};
 		            touch-action: manipulation;
 		            pointer-events: auto;
+		            max-width: ${isMobile ? '95vw' : 'none'};
 		        `;
         
-		        // Menu buttons - optimized for mobile
+		        // ALL 6 BUTTONS - responsive sizing
 		        var buttons = [
 		            { icon: 'content_copy', label: 'Copy', action: 'copy', color: '#3B82F6' },
+		            { icon: 'content_cut', label: 'Cut', action: 'cut', color: '#EF4444' },
+		            { icon: 'content_paste', label: 'Paste', action: 'paste', color: '#10B981' },
 		            { icon: 'auto_awesome', label: 'AI Suggest', action: 'ai-suggest', color: '#8B5CF6' },
 		            { icon: 'spellcheck', label: 'Proofread', action: 'ai-proofread', color: '#F59E0B' },
 		            { icon: 'translate', label: 'Translate', action: 'ai-translate', color: '#EC4899' }
@@ -1503,19 +1513,23 @@
 		            var button = document.createElement('button');
 		            button.className = 'selection-menu-btn';
 		            button.setAttribute('data-action', btn.action);
+            
+		            // Responsive button sizing
 		            button.style.cssText = `
 		                background: ${btn.color};
 		                color: white;
 		                border: none;
-		                border-radius: 8px;
-		                padding: 12px 14px;
+		                border-radius: ${isMobile ? '6px' : '8px'};
+		                padding: ${isMobile ? '8px 6px' : '12px 14px'};
 		                cursor: pointer;
 		                display: flex;
 		                flex-direction: column;
 		                align-items: center;
-		                gap: 4px;
-		                min-width: 70px;
-		                font-size: 10px;
+		                justify-content: center;
+		                gap: ${isMobile ? '2px' : '4px'};
+		                min-width: ${isMobile ? '50px' : '70px'};
+		                flex: ${isMobile ? '1 1 auto' : '0 0 auto'};
+		                font-size: ${isMobile ? '8px' : '10px'};
 		                transition: transform 0.1s;
 		                touch-action: manipulation;
 		                pointer-events: auto;
@@ -1523,15 +1537,18 @@
 		            `;
             
 		            button.innerHTML = `
-		                <span class="material-symbols-outlined" style="font-size: 22px;">${btn.icon}</span>
-		                <span style="font-size: 10px; white-space: nowrap;">${btn.label}</span>
+		                <span class="material-symbols-outlined" style="font-size: ${isMobile ? '18px' : '22px'};">${btn.icon}</span>
+		                <span style="font-size: ${isMobile ? '8px' : '10px'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${btn.label}</span>
 		            `;
             
-		            // Mobile-optimized event handlers
+		            // Store action on button element
+		            button.btnAction = btn.action;
+            
+		            // Mobile touch events
 		            button.addEventListener('touchstart', function(e) {
 		                e.stopPropagation();
 		                this.style.transform = 'scale(0.92)';
-		                customSelectionMenu.isInteracting = true;
+		                self.isInteracting = true;
 		            }, { passive: false });
             
 		            button.addEventListener('touchend', function(e) {
@@ -1539,31 +1556,37 @@
 		                e.stopPropagation();
 		                this.style.transform = 'scale(1)';
                 
+		                var action = this.btnAction;
 		                // Execute action immediately
 		                setTimeout(function() {
-		                    customSelectionMenu.handleAction(btn.action);
+		                    self.handleAction(action);
 		                }, 50);
 		            }, { passive: false });
             
-		            // Desktop fallback
+		            // Desktop click
 		            button.addEventListener('click', function(e) {
 		                e.preventDefault();
 		                e.stopPropagation();
-		                customSelectionMenu.handleAction(btn.action);
+		                self.handleAction(this.btnAction);
 		            });
             
-		            this.menuElement.appendChild(button);
-		        }, this);
+		            self.menuElement.appendChild(button);
+		        });
         
 		        // Prevent menu from closing when touching it
 		        this.menuElement.addEventListener('touchstart', function(e) {
 		            e.stopPropagation();
-		            customSelectionMenu.isInteracting = true;
+		            self.isInteracting = true;
 		        }, { passive: false });
         
 		        this.menuElement.addEventListener('touchmove', function(e) {
 		            e.stopPropagation();
 		        }, { passive: false });
+        
+		        this.menuElement.addEventListener('mousedown', function(e) {
+		            e.stopPropagation();
+		            self.isInteracting = true;
+		        });
         
 		        document.body.appendChild(this.menuElement);
         
@@ -1572,13 +1595,23 @@
         
 		        // Hide menu when touching outside
 		        document.addEventListener('touchstart', function(e) {
-		            if (customSelectionMenu.isInteracting) {
+		            if (self.isInteracting) {
 		                return;
 		            }
-		            if (!customSelectionMenu.menuElement.contains(e.target)) {
-		                customSelectionMenu.hide();
+		            if (!self.menuElement.contains(e.target)) {
+		                self.hide();
 		            }
 		        }, { passive: true });
+        
+		        document.addEventListener('mousedown', function(e) {
+		            if (self.isInteracting) {
+		                self.isInteracting = false;
+		                return;
+		            }
+		            if (!self.menuElement.contains(e.target)) {
+		                self.hide();
+		            }
+		        });
 		    },
     
 		    onSelectionChange: function() {
@@ -1621,7 +1654,7 @@
         
 		        // Position above selection
 		        var menuWidth = this.menuElement.offsetWidth;
-		        var menuHeight = 90;
+		        var menuHeight = this.menuElement.offsetHeight;
 		        var left = rect.left + (rect.width / 2) - (menuWidth / 2);
 		        var top = rect.top - menuHeight - 10;
         
@@ -1649,6 +1682,7 @@
 		    },
     
 		    handleAction: function(action) {
+		        var self = this;
 		        var selection = window.getSelection();
 		        var selectedText = selection.toString().trim();
         
@@ -1657,34 +1691,66 @@
 		        switch(action) {
 		            case 'copy':
 		                document.execCommand('copy');
-		                showCustomAlert('Copied', 'Text copied to clipboard');
 		                this.hide();
+		                setTimeout(function() {
+		                    showCustomAlert('Copied', 'Text copied to clipboard');
+		                }, 100);
+		                break;
+                
+		            case 'cut':
+		                document.execCommand('cut');
+		                this.hide();
+		                setTimeout(function() {
+		                    showCustomAlert('Cut', 'Text cut to clipboard');
+		                }, 100);
+		                break;
+                
+		            case 'paste':
+		                this.hide();
+		                // Try modern clipboard API first
+		                if (navigator.clipboard && navigator.clipboard.readText) {
+		                    navigator.clipboard.readText().then(function(text) {
+		                        document.execCommand('insertText', false, text);
+		                        showCustomAlert('Pasted', 'Text pasted from clipboard');
+		                    }).catch(function() {
+		                        // Fallback
+		                        document.execCommand('paste');
+		                    });
+		                } else {
+		                    // Fallback for older browsers
+		                    document.execCommand('paste');
+		                }
 		                break;
                 
 		            case 'ai-suggest':
 		                this.hide();
 		                setTimeout(function() {
-		                    handleAction('ai-suggest');
-		                }, 100);
+		                    if (typeof handleAction === 'function') {
+		                        handleAction('ai-suggest');
+		                    }
+		                }, 150);
 		                break;
                 
 		            case 'ai-proofread':
 		                this.hide();
 		                setTimeout(function() {
-		                    handleAction('ai-proofread');
-		                }, 100);
+		                    if (typeof handleAction === 'function') {
+		                        handleAction('ai-proofread');
+		                    }
+		                }, 150);
 		                break;
                 
 		            case 'ai-translate':
 		                this.hide();
 		                setTimeout(function() {
-		                    handleAction('ai-translate');
-		                }, 100);
+		                    if (typeof handleAction === 'function') {
+		                        handleAction('ai-translate');
+		                    }
+		                }, 150);
 		                break;
 		        }
 		    }
 		};
-		
 
 		// Initialize custom selection menu
 		customSelectionMenu.init();
