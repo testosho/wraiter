@@ -117,19 +117,32 @@
 		    <button data-action="format-bold" style="background: none; border: none; color: var(--mobile-btn-color); font-weight: bold; padding: 8px 12px; cursor: pointer; font-size: 14px;">B</button>
 		    <button data-action="format-italic" style="background: none; border: none; color: var(--mobile-btn-color); font-style: italic; padding: 8px 12px; cursor: pointer; font-size: 14px;">I</button>
 		    <button data-action="format-underline" style="background: none; border: none; color: var(--mobile-btn-color); text-decoration: underline; padding: 8px 12px; cursor: pointer; font-size: 14px;">U</button>
+			<span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+
+			<!-- ADD THESE ALIGNMENT BUTTONS -->
+			<button data-action="format-align-left" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">⬅</button>
+			<button data-action="format-align-center" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">↔</button>
+			<button data-action="format-align-right" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">➡</button>
+			
 		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
 		  <button id="color-indicator-btn" data-action="format-color" style="background: none; border: none; color: #000000; padding: 8px 12px; cursor: pointer; font-size: 18px;">⬤</button>
 		    <button data-action="format-font" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 12px;">Font</button>
 		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
 		    <button data-action="format-heading1" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">H1</button>
+			  <button data-action="format-code" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px; font-family: monospace;">&lt;/&gt;</button>
 		    <button data-action="format-heading2" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">H2</button>
+			  
 		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
 		    <button data-action="format-list" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">○</button>
 		    <button data-action="format-numlist" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">1.</button>
 		    <button data-action="format-quote" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">"</button>
 		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
 		    <button data-action="format-link" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px;">🔗</button>
-		    <button data-action="format-code" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 14px; font-family: monospace;">&lt;/&gt;</button>
+		
+			 <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+		    <button data-action="format-clear" style="background: none; border: none; color: #EF4444; font-weight: bold; padding: 8px 12px; cursor: pointer; font-size: 14px;">C</button>
+			 <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
+			<span id="word-count" style="color: var(--mobile-btn-color); padding: 8px 12px; font-size: 12px; opacity: 0.7;">0 words | 0 chars</span>
 		</div>
 		
 		
@@ -1259,29 +1272,51 @@
             /// ✅ THIS IS THE NEW, MORE RELIABLE SCROLLING FUNCTION
 			ensureCursorVisible() {
 			    if (!this.isKeyboardVisible) return;
-
+    
 			    setTimeout(() => {
 			        const editor = document.getElementById('editor');
 			        const selection = window.getSelection();
+        
 			        if (!selection || !selection.rangeCount) return;
-
+        
 			        const range = selection.getRangeAt(0);
 			        const rect = range.getBoundingClientRect();
         
-			        // Calculate safe zone (keyboard + toolbar + 2 lines buffer)
+			        // Calculate safe zone (keyboard + toolbar + buffer)
 			        const lineHeight = 25; // approximate line height
-			        const buffer = lineHeight * 2; // 2 lines space
+			        const buffer = lineHeight * 3; // 3 lines space
 			        const toolbarHeight = 48;
 			        const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
 			        const safeBottom = viewportHeight - toolbarHeight - buffer;
+			        const safeTop = 60; // Top bar height + small buffer
         
-			        // If cursor is too low, scroll it up
+			        // Cursor is too low (behind keyboard)
 			        if (rect.bottom > safeBottom) {
-			            const scrollAmount = rect.bottom - safeBottom + 20;
+			            const scrollAmount = rect.bottom - safeBottom + 30;
 			            editor.scrollTop += scrollAmount;
 			        }
-			    }, 100);
+			        // Cursor is too high (above viewport)
+			        else if (rect.top < safeTop) {
+			            const scrollAmount = safeTop - rect.top + 20;
+			            editor.scrollTop -= scrollAmount;
+			        }
+        
+			        // Alternative: Use native scrollIntoView if cursor is completely hidden
+			        if (rect.bottom > viewportHeight || rect.top < 0) {
+			            const cursorNode = range.startContainer;
+			            const cursorElement = cursorNode.nodeType === 3 ? cursorNode.parentElement : cursorNode;
+            
+			            if (cursorElement) {
+			                cursorElement.scrollIntoView({
+			                    behavior: 'smooth',
+			                    block: 'center',
+			                    inline: 'nearest'
+			                });
+			            }
+			        }
+			    }, 150);
 			}
+			
 			
 			
             getKeyboardHeight() {
@@ -1410,6 +1445,234 @@
 
 		var floatingToolbar = new FloatingToolbar();
 		window.floatingToolbar = floatingToolbar;
+		
+		
+		
+		// ============================================
+		// ADD CUSTOM SELECTION MENU CODE HERE
+		// ============================================
+
+		// Custom Text Selection Menu with AI Features - FIXED VERSION
+		var customSelectionMenu = {
+		    menuElement: null,
+		    isInteracting: false,
+    
+		    init: function() {
+		        // Create the custom menu
+		        this.menuElement = document.createElement('div');
+		        this.menuElement.id = 'custom-selection-menu';
+		        this.menuElement.style.cssText = `
+		            position: fixed;
+		            display: none;
+		            background: #1F2937;
+		            border-radius: 12px;
+		            padding: 8px;
+		            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+		            z-index: 99999;
+		            flex-wrap: nowrap;
+		            gap: 4px;
+		        `;
+        
+		        // Menu buttons
+		        var buttons = [
+		            { icon: 'content_copy', label: 'Copy', action: 'copy', color: '#3B82F6' },
+		            { icon: 'content_cut', label: 'Cut', action: 'cut', color: '#EF4444' },
+		            { icon: 'content_paste', label: 'Paste', action: 'paste', color: '#10B981' },
+		            { icon: 'auto_awesome', label: 'AI Suggest', action: 'ai-suggest', color: '#8B5CF6' },
+		            { icon: 'spellcheck', label: 'Proofread', action: 'ai-proofread', color: '#F59E0B' },
+		            { icon: 'translate', label: 'Translate', action: 'ai-translate', color: '#EC4899' }
+		        ];
+        
+		        buttons.forEach(function(btn) {
+		            var button = document.createElement('button');
+		            button.className = 'selection-menu-btn';
+		            button.setAttribute('data-action', btn.action);
+		            button.style.cssText = `
+		                background: ${btn.color};
+		                color: white;
+		                border: none;
+		                border-radius: 8px;
+		                padding: 10px 12px;
+		                cursor: pointer;
+		                display: flex;
+		                flex-direction: column;
+		                align-items: center;
+		                gap: 4px;
+		                min-width: 60px;
+		                font-size: 10px;
+		                transition: transform 0.2s;
+		            `;
+            
+		            button.innerHTML = `
+		                <span class="material-symbols-outlined" style="font-size: 20px;">${btn.icon}</span>
+		                <span style="font-size: 9px; white-space: nowrap;">${btn.label}</span>
+		            `;
+            
+		            // FIXED: Prevent event bubbling
+		            button.addEventListener('mousedown', function(e) {
+		                e.preventDefault();
+		                e.stopPropagation();
+		            });
+            
+		            button.addEventListener('touchstart', function(e) {
+		                e.preventDefault();
+		                e.stopPropagation();
+		                this.style.transform = 'scale(0.95)';
+		            });
+            
+		            button.addEventListener('touchend', function(e) {
+		                e.preventDefault();
+		                e.stopPropagation();
+		                this.style.transform = 'scale(1)';
+		            });
+            
+		            button.addEventListener('click', function(e) {
+		                e.preventDefault();
+		                e.stopPropagation();
+		                customSelectionMenu.handleAction(btn.action);
+		            });
+            
+		            this.menuElement.appendChild(button);
+		        }, this);
+        
+		        // FIXED: Prevent menu from closing when interacting with it
+		        this.menuElement.addEventListener('mousedown', function(e) {
+		            e.preventDefault();
+		            e.stopPropagation();
+		            customSelectionMenu.isInteracting = true;
+		        });
+        
+		        this.menuElement.addEventListener('touchstart', function(e) {
+		            e.preventDefault();
+		            e.stopPropagation();
+		            customSelectionMenu.isInteracting = true;
+		        });
+        
+		        document.body.appendChild(this.menuElement);
+        
+		        // Listen for text selection
+		        document.addEventListener('selectionchange', this.onSelectionChange.bind(this));
+        
+		        // FIXED: Better click outside handler
+		        document.addEventListener('mousedown', function(e) {
+		            if (customSelectionMenu.isInteracting) {
+		                customSelectionMenu.isInteracting = false;
+		                return;
+		            }
+		            if (!customSelectionMenu.menuElement.contains(e.target)) {
+		                customSelectionMenu.hide();
+		            }
+		        });
+        
+		        document.addEventListener('touchstart', function(e) {
+		            if (customSelectionMenu.isInteracting) {
+		                customSelectionMenu.isInteracting = false;
+		                return;
+		            }
+		            if (!customSelectionMenu.menuElement.contains(e.target)) {
+		                customSelectionMenu.hide();
+		            }
+		        });
+		    },
+    
+		    onSelectionChange: function() {
+		        var selection = window.getSelection();
+		        var selectedText = selection.toString().trim();
+        
+		        if (selectedText.length > 0) {
+		            // Show menu after a short delay
+		            setTimeout(function() {
+		                var sel = window.getSelection();
+		                if (sel.toString().trim().length > 0) {
+		                    customSelectionMenu.show();
+		                }
+		            }, 200); // Increased delay to 200ms
+		        } else {
+		            // Don't hide immediately if user is interacting
+		            if (!this.isInteracting) {
+		                this.hide();
+		            }
+		        }
+		    },
+    
+		    show: function() {
+		        var selection = window.getSelection();
+		        if (!selection.rangeCount) return;
+        
+		        var range = selection.getRangeAt(0);
+		        var rect = range.getBoundingClientRect();
+        
+		        this.menuElement.style.display = 'flex';
+        
+		        // Position above selection
+		        var menuHeight = 80;
+		        var left = rect.left + (rect.width / 2) - (this.menuElement.offsetWidth / 2);
+		        var top = rect.top - menuHeight;
+        
+		        // Keep within viewport
+		        var viewportWidth = window.innerWidth;
+		        if (left < 10) left = 10;
+		        if (left + this.menuElement.offsetWidth > viewportWidth - 10) {
+		            left = viewportWidth - this.menuElement.offsetWidth - 10;
+		        }
+        
+		        // If menu would be off-screen top, show below selection
+		        if (top < 10) {
+		            top = rect.bottom + 10;
+		        }
+        
+		        this.menuElement.style.left = left + 'px';
+		        this.menuElement.style.top = (top + window.scrollY) + 'px';
+		    },
+    
+		    hide: function() {
+		        this.menuElement.style.display = 'none';
+		        this.isInteracting = false;
+		    },
+    
+		    handleAction: function(action) {
+		        var selection = window.getSelection();
+		        var selectedText = selection.toString().trim();
+        
+		        switch(action) {
+		            case 'copy':
+		                document.execCommand('copy');
+		                showCustomAlert('Copied', 'Text copied to clipboard');
+		                break;
+                
+		            case 'cut':
+		                document.execCommand('cut');
+		                showCustomAlert('Cut', 'Text cut to clipboard');
+		                break;
+                
+		            case 'paste':
+		                document.execCommand('paste');
+		                break;
+                
+		            case 'ai-suggest':
+		                this.hide();
+		                handleAction('ai-suggest');
+		                break;
+                
+		            case 'ai-proofread':
+		                this.hide();
+		                handleAction('ai-proofread');
+		                break;
+                
+		            case 'ai-translate':
+		                this.hide();
+		                handleAction('ai-translate');
+		                break;
+		        }
+        
+		        this.hide();
+		    }
+		};
+
+		// Initialize custom selection menu
+		customSelectionMenu.init();
+		window.customSelectionMenu = customSelectionMenu;
+		
 		
 
 		    // Re-apply on orientation change
@@ -2475,6 +2738,24 @@ function toggleAiPanel() {
 		function autoSaveCurrentDocument() {
 		    ultraDebouncedAutoSave();
 		}
+		
+		function updateWordCount() {
+		    var text = editor.innerText.trim();
+		    var words = text ? text.split(/\s+/).filter(function(w) { return w.length > 0; }).length : 0;
+		    var chars = text.length;
+    
+		    var wordCountElem = document.getElementById('word-count');
+		    if (wordCountElem) {
+		        wordCountElem.textContent = words + ' words | ' + chars + ' chars';
+		    }
+		}
+
+		// Update on every keystroke
+		editor.addEventListener('input', updateWordCount);
+		editor.addEventListener('paste', function() {
+		    setTimeout(updateWordCount, 100);
+		});
+		
 
 		function createNewDocument() {
 		    currentDocumentId = generateId();
@@ -3626,9 +3907,6 @@ function toggleAiPanel() {
 		
 		
 		
-		
-		
-		
 
 		function getWorkingPrompt(task, textToProcess, customInstruction) {
 		    var workingPrompts = {
@@ -4585,22 +4863,38 @@ function toggleAiPanel() {
 		    var modalHTML = `
 		        <div style="line-height: 1.5; padding: 10px;">
 		            <p style="margin-bottom: 15px; font-weight: 600;">Choose Export Option</p>
-		            <button id="save-all-txt" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                Save All Folders as Text<br>
-		                <small style="opacity: 0.7;">Complete library with folder structure</small>
-		            </button>
-		            <button id="save-all-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                Save All Folders as PDF<br>
-		                <small style="opacity: 0.7;">Complete library with folder structure</small>
-		            </button>
+            
 		            <button id="save-current-txt" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
 		                Save Current Document as Text<br>
 		                <small style="opacity: 0.7;">Active document only</small>
 		            </button>
+            
 		            <button id="save-current-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
 		                Save Current Document as PDF<br>
 		                <small style="opacity: 0.7;">Active document only</small>
 		            </button>
+            
+<button id="save-unicode-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px; background: #10B981; color: white;">
+    Save Non-English Document as PDF<br>
+    <small style="opacity: 0.9;">For Hindi, Arabic, Chinese, etc. Uses browser print</small>
+</button>
+		           
+            
+		            <button id="save-all-txt" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
+		                Save All Folders as Text<br>
+		                <small style="opacity: 0.7;">Complete library with folder structure</small>
+		            </button>
+            
+		            <button id="save-all-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
+		                Save All Folders as PDF<br>
+		                <small style="opacity: 0.7;">Complete library with folder structure</small>
+		            </button>
+            
+		            <button id="backup-all" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px; background: #10B981; color: white;">
+		                Create Backup .wai<br>
+		                <small style="opacity: 0.9;">Backup all documents and folders</small>
+		            </button>
+            
 		            <button id="cancel-save" class="modal-button secondary" style="width: 100%; margin-top: 15px;">Cancel</button>
 		        </div>
 		    `;
@@ -4612,6 +4906,8 @@ function toggleAiPanel() {
 		        var btn2 = document.getElementById('save-all-pdf');
 		        var btn3 = document.getElementById('save-current-txt');
 		        var btn4 = document.getElementById('save-current-pdf');
+		        var btn5 = document.getElementById('backup-all');
+		        var btn6 = document.getElementById('save-unicode-pdf'); // NEW BUTTON
 		        var btnCancel = document.getElementById('cancel-save');
         
 		        if (btn1) {
@@ -4621,6 +4917,7 @@ function toggleAiPanel() {
 		                exportAllFoldersAsText();
 		            };
 		        }
+        
 		        if (btn2) {
 		            btn2.onclick = function() {
 		                btn2.onclick = null;
@@ -4628,6 +4925,7 @@ function toggleAiPanel() {
 		                exportAllFoldersAsPDF();
 		            };
 		        }
+        
 		        if (btn3) {
 		            btn3.onclick = function() {
 		                btn3.onclick = null;
@@ -4635,6 +4933,7 @@ function toggleAiPanel() {
 		                exportCurrentDocumentAsText();
 		            };
 		        }
+        
 		        if (btn4) {
 		            btn4.onclick = function() {
 		                btn4.onclick = null;
@@ -4642,6 +4941,25 @@ function toggleAiPanel() {
 		                exportCurrentDocumentAsPDF();
 		            };
 		        }
+        
+		        if (btn5) {
+		            btn5.onclick = function() {
+		                btn5.onclick = null;
+		                hideModal();
+		                exportBackup();
+		            };
+		        }
+        
+		        // NEW BUTTON HANDLER
+				if (btn6) {
+				    btn6.onclick = function() {
+				        btn6.onclick = null;
+				        hideModal();
+				        exportUnicodePDFPrint(); // Changed from exportUnicodePDFOnline()
+				    };
+				}
+		      
+        
 		        if (btnCancel) {
 		            btnCancel.onclick = function() {
 		                hideModal();
@@ -4761,6 +5079,234 @@ function toggleAiPanel() {
 		    doc.save('Wraiter_Complete_Library_' + Date.now() + '.pdf');
 		    showCustomAlert('Exported', 'Complete library exported as PDF');
 		}
+		
+		function exportUnicodePDFPrint() {
+		    if (!currentDocumentId) {
+		        showCustomAlert('No Document', 'Please open a document first');
+		        return;
+		    }
+    
+		    var files = getAllFiles();
+		    var doc = files[currentDocumentId];
+		    if (!doc) {
+		        showCustomAlert('Error', 'Document not found');
+		        return;
+		    }
+    
+		    var text = doc.text;
+		    var isFountain = /^(INT\.|EXT\.|INT\/EXT|I\/E)/im.test(text);
+    
+		    // Create print window with proper Unicode fonts
+		    var printWindow = window.open('', '_blank');
+    
+		    var htmlContent = `
+		<!DOCTYPE html>
+		<html>
+		<head>
+		    <meta charset="UTF-8">
+		    <title>${doc.title}</title>
+		    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+		    <style>
+		        /* HIDE instructions when printing */
+		        @media print {
+		            .print-instructions {
+		                display: none !important;
+		            }
+            
+		            @page {
+		                margin: 1in;
+		                size: A4;
+		            }
+            
+		            body {
+		                font-family: 'Courier Prime', 'Courier New', monospace;
+		                font-size: 12pt;
+		                line-height: 1.5;
+		                color: #000;
+		            }
+            
+		            h1 {
+		                font-size: 14pt;
+		                text-align: center;
+		                margin-bottom: 30px;
+		                text-transform: uppercase;
+		            }
+		        }
+        
+		        /* Screen view */
+		        @media screen {
+		            body {
+		                font-family: 'Courier Prime', 'Courier New', monospace;
+		                padding: 40px;
+		                max-width: 800px;
+		                margin: 0 auto;
+		                line-height: 1.5;
+		                background: #f5f5f5;
+		            }
+            
+		            .print-instructions {
+		                background: #FEF3C7;
+		                border: 2px solid #F59E0B;
+		                padding: 20px;
+		                border-radius: 8px;
+		                margin-bottom: 30px;
+		                font-size: 14px;
+		                font-family: Arial, sans-serif;
+		            }
+            
+		            .print-instructions strong {
+		                display: block;
+		                margin-bottom: 10px;
+		                font-size: 16px;
+		            }
+            
+		            .print-instructions kbd {
+		                background: #fff;
+		                padding: 2px 6px;
+		                border-radius: 3px;
+		                border: 1px solid #ccc;
+		                font-family: monospace;
+		            }
+            
+		            h1 {
+		                text-align: center;
+		                margin-bottom: 30px;
+		                text-transform: uppercase;
+		            }
+		        }
+        
+		        /* Common styles for both print and screen */
+		        .content {
+		            background: white;
+		            padding: 40px;
+		            min-height: 500px;
+		        }
+        
+		        ${isFountain ? `
+		        /* Fountain Screenplay Formatting */
+		        .scene-heading {
+		            font-weight: bold;
+		            text-transform: uppercase;
+		            margin-top: 20px;
+		            margin-bottom: 10px;
+		        }
+        
+		        .character {
+		            margin-left: 200px;
+		            margin-top: 20px;
+		            margin-bottom: 5px;
+		            font-weight: 600;
+		        }
+        
+		        .parenthetical {
+		            margin-left: 170px;
+		            margin-bottom: 5px;
+		            font-style: italic;
+		        }
+        
+		        .dialogue {
+		            margin-left: 150px;
+		            margin-right: 150px;
+		            margin-bottom: 15px;
+		            max-width: 350px;
+		        }
+        
+		        .action {
+		            margin: 10px 0;
+		        }
+        
+		        .transition {
+		            margin-top: 20px;
+		            margin-bottom: 10px;
+		            text-align: right;
+		            font-weight: bold;
+		        }
+		        ` : `
+		        /* Plain text formatting */
+		        .content {
+		            white-space: pre-wrap;
+		            word-wrap: break-word;
+		        }
+		        `}
+		    </style>
+		</head>
+		<body>
+		    <div class="print-instructions">
+		        <strong>📄 Print to PDF Instructions:</strong>
+		        1. Press <kbd>Ctrl+P</kbd> (or <kbd>Cmd+P</kbd> on Mac)<br>
+		        2. Select "Save as PDF" as printer<br>
+		        3. Click "Save" button<br>
+		        <br>
+		        <em>This yellow box will NOT appear in your PDF.</em>
+		    </div>
+    
+		    <div class="content">
+		        <h1>${doc.title}</h1>
+		        ${isFountain ? parseFountainForPrint(text) : `<div style="white-space: pre-wrap;">${text}</div>`}
+		    </div>
+		</body>
+		</html>
+		    `;
+    
+		    printWindow.document.write(htmlContent);
+		    printWindow.document.close();
+    
+		    // Wait for fonts to load, then trigger print
+		    setTimeout(function() {
+		        printWindow.focus();
+		        printWindow.print();
+		    }, 1200);
+		}
+
+		// Fountain parser for proper screenplay formatting
+		function parseFountainForPrint(text) {
+		    var lines = text.split('\n');
+		    var html = '';
+    
+		    for (var i = 0; i < lines.length; i++) {
+		        var line = lines[i];
+		        var trimmed = line.trim();
+        
+		        if (!trimmed) {
+		            html += '<br>';
+		            continue;
+		        }
+        
+		        // Scene headings (INT. EXT. etc.)
+		        if (/^(INT\.|EXT\.|INT\/EXT|I\/E)/i.test(trimmed)) {
+		            html += '<div class="scene-heading">' + trimmed + '</div>';
+		        }
+		        // Transitions (FADE TO:, CUT TO:, etc.)
+		        else if (/^(FADE TO|CUT TO|DISSOLVE TO|FADE OUT):/i.test(trimmed)) {
+		            html += '<div class="transition">' + trimmed + '</div>';
+		        }
+		        // Character names (all caps, centered)
+		        else if (/^[A-Z][A-Z\s]{1,}$/.test(trimmed) && trimmed.length < 40) {
+		            html += '<div class="character">' + trimmed + '</div>';
+		        }
+		        // Parentheticals (wrapped in parentheses)
+		        else if (/^\(.+\)$/.test(trimmed)) {
+		            html += '<div class="parenthetical">' + trimmed + '</div>';
+		        }
+		        // Dialogue (follows character name)
+		        else if (i > 0 && /^[A-Z][A-Z\s]{1,}$/.test(lines[i-1].trim())) {
+		            html += '<div class="dialogue">' + trimmed + '</div>';
+		        }
+		        // Action/Description
+		        else {
+		            html += '<div class="action">' + trimmed + '</div>';
+		        }
+		    }
+    
+		    return html;
+		}
+
+		window.exportUnicodePDFPrint = exportUnicodePDFPrint;
+		window.parseFountainForPrint = parseFountainForPrint;
+		
+		
+		
+		
 
 		function exportCurrentDocumentAsText() {
 		    if (!currentDocumentId) {
@@ -4913,6 +5459,95 @@ function toggleAiPanel() {
 		window.exportAllFoldersAsPDF = exportAllFoldersAsPDF;
 		window.exportCurrentDocumentAsText = exportCurrentDocumentAsText;
 		window.exportCurrentDocumentAsPDF = exportCurrentDocumentAsPDF;
+		
+		
+		function exportBackup() {
+		    var files = getAllFiles();
+		    var folders = getAllFoldersData();
+		    var timestamp = Date.now();
+    
+		    var backupData = {
+		        version: '1.0',
+		        timestamp: timestamp,
+		        files: files,
+		        folders: folders
+		    };
+    
+		    var blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+		    var url = URL.createObjectURL(blob);
+		    var a = document.createElement('a');
+		    a.href = url;
+		    a.download = 'wraiter_backup_' + timestamp + '.wai';
+		    document.body.appendChild(a);
+		    a.click();
+		    document.body.removeChild(a);
+		    URL.revokeObjectURL(url);
+    
+		    showCustomAlert('Backup Created', 'Your documents have been backed up as .wai file');
+		}
+		
+		function importBackup(file) {
+		    if (!file.name.endsWith('.wai')) {
+		        showCustomAlert('Invalid File', 'Please select a .wai backup file');
+		        return;
+		    }
+    
+		    var reader = new FileReader();
+		    reader.onload = function(e) {
+		        try {
+		            var backupData = JSON.parse(e.target.result);
+            
+		            if (!backupData.version || !backupData.files) {
+		                throw new Error('Invalid backup file format');
+		            }
+            
+		            // Create unique folder name
+		            var backupFolderName = 'Backup_' + new Date(backupData.timestamp).toLocaleDateString().replace(/\//g, '-');
+		            var existingFolders = getAllFoldersData();
+		            var counter = 1;
+		            var finalFolderName = backupFolderName;
+            
+		            while (existingFolders[finalFolderName]) {
+		                finalFolderName = backupFolderName + '_' + counter;
+		                counter++;
+		            }
+            
+		            // Create backup folder
+		            existingFolders[finalFolderName] = {
+		                id: 'folder_' + Date.now(),
+		                name: finalFolderName,
+		                created: new Date().toISOString()
+		            };
+		            saveFoldersData(existingFolders);
+            
+		            // Import documents into backup folder
+		            var currentFiles = getAllFiles();
+		            Object.keys(backupData.files).forEach(function(fileId) {
+		                var file = backupData.files[fileId];
+		                var newId = 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+		                currentFiles[newId] = {
+		                    id: newId,
+		                    content: file.content,
+		                    text: file.text,
+		                    title: file.title,
+		                    lastModified: new Date().toISOString(),
+		                    folder: finalFolderName,
+		                    tags: file.tags || []
+		                };
+		            });
+            
+		            localStorage.setItem('wraiterFiles', JSON.stringify(currentFiles));
+            
+		            showCustomAlert('Backup Restored', 'Backup loaded into folder: "' + finalFolderName + '"');
+		            loadFileLibrary();
+            
+		        } catch (error) {
+		            showCustomAlert('Error', 'Failed to restore backup: ' + error.message);
+		        }
+		    };
+		    reader.readAsText(file);
+		}
+		
 		
 
 		// ✅ ADD THIS FUNCTION AFTER YOUR OTHER FUNCTIONS
@@ -5263,6 +5898,44 @@ function toggleAiPanel() {
 					    }
 					    break;
 					
+					case 'format-clear':
+					    if (confirm('Clear all text in this document? This cannot be undone.')) {
+					        editor.innerHTML = '';
+					        history = [''];
+					        historyIndex = 0;
+					        if (currentDocumentId) {
+					            saveToStorage(currentDocumentId, {
+					                id: currentDocumentId,
+					                content: '',
+					                text: '',
+					                title: 'Untitled',
+					                lastModified: new Date().toISOString(),
+					                folder: currentFolder,
+					                tags: currentTags
+					            });
+					        }
+					        updateWordCount();
+					        showCustomAlert('Cleared', 'Document cleared successfully');
+					    }
+					    break;
+						
+					case 'format-align-left':
+					    document.execCommand('justifyLeft');
+					    break;
+
+					case 'format-align-center':
+					    document.execCommand('justifyCenter');
+					    break;
+
+					case 'format-align-right':
+					    document.execCommand('justifyRight');
+					    break;
+						
+					case 'export-unicode-pdf':
+					    exportUnicodePDFOnline();
+					    break;
+						
+						
 					
 			
 		        case 'save-txt':
@@ -5287,44 +5960,49 @@ function toggleAiPanel() {
 		            }
 		            break;
 				case 'open-text-file':
-				    // Create hidden file input
 				    var fileInput = document.createElement('input');
 				    fileInput.type = 'file';
-				    fileInput.accept = '.txt,.fountain';
+				    fileInput.accept = '.txt,.fountain,.wai';
 				    fileInput.style.display = 'none';
     
 				    fileInput.onchange = function(e) {
 				        var file = e.target.files[0];
 				        if (!file) return;
         
-				        var reader = new FileReader();
-				        reader.onload = function(event) {
-				            editor.innerHTML = event.target.result;
-				            currentDocumentId = generateId();
-				            currentFolder = 'All Documents';
-				            history = [editor.innerHTML];
-				            historyIndex = 0;
-            
-				            // Save imported document
-				            saveToStorage(currentDocumentId, {
-				                id: currentDocumentId,
-				                content: editor.innerHTML,
-				                text: editor.innerText,
-				                title: file.name.replace(/\.(txt|fountain)$/, ''),
-				                lastModified: new Date().toISOString(),
-				                folder: 'All Documents',
-				                tags: []
-				            });
-            
-				            showCustomAlert('Opened', 'File imported successfully');
-				        };
-				        reader.readAsText(file);
+				        if (file.name.endsWith('.wai')) {
+				            // Backup file
+				            importBackup(file);
+				        } else {
+				            // Regular text file
+				            var reader = new FileReader();
+				            reader.onload = function(event) {
+				                editor.innerHTML = event.target.result;
+				                currentDocumentId = generateId();
+				                currentFolder = 'All Documents';
+				                history = [editor.innerHTML];
+				                historyIndex = 0;
+                
+				                saveToStorage(currentDocumentId, {
+				                    id: currentDocumentId,
+				                    content: editor.innerHTML,
+				                    text: editor.innerText,
+				                    title: file.name.replace(/\.(txt|fountain)$/, ''),
+				                    lastModified: new Date().toISOString(),
+				                    folder: 'All Documents',
+				                    tags: []
+				                });
+                
+				                showCustomAlert('Opened', 'File imported successfully');
+				            };
+				            reader.readAsText(file);
+				        }
 				        document.body.removeChild(fileInput);
 				    };
     
 				    document.body.appendChild(fileInput);
 				    fileInput.click();
 				    break;
+				
 		        
 		        case 'share-content':
 		            shareContent();
@@ -5772,30 +6450,35 @@ function toggleAiPanel() {
 		
 
 		// ✅ Ensure this block looks exactly like this
+		// IMPROVED: Only scroll cursor into view, don't force it to end
+		editor.addEventListener('click', function(e) {
+		    // Let the click naturally position the cursor
+		    setTimeout(function() {
+		        floatingToolbar.ensureCursorVisible();
+		    }, 100);
+		});
+
+		// This handles typing and keeps cursor visible
 		editor.addEventListener('input', function() {
 		    updateEditorState();
 		    floatingToolbar.ensureCursorVisible();
 		});
-	
-				
 
-				editor.addEventListener('click', function(e) {
-				    // Only move cursor to end if clicking on empty space, not on existing text
-				    if (e.target.id === 'editor') {
-				        moveCursorToEnd();
-				    }
-				    floatingToolbar.ensureCursorVisible();
-				});
-				
+		// This handles arrow keys and keeps cursor visible  
+		editor.addEventListener('keyup', function(e) {
+		    // Only for navigation keys
+		    if (e.keyCode >= 37 && e.keyCode <= 40) { // Arrow keys
+		        floatingToolbar.ensureCursorVisible();
+		    }
+		});
 
-				editor.addEventListener('keydown', function() {
-				  floatingToolbar.ensureCursorVisible();
-				});
+		// This handles focus and scrolls to cursor
+		editor.addEventListener('focus', function() {
+		    setTimeout(function() {
+		        floatingToolbar.ensureCursorVisible();
+		    }, 300);
+		});
 		
-				editor.addEventListener('focus', function() {
-				    floatingToolbar.ensureCursorVisible();
-				});
-
 				modalBackdrop.addEventListener('click', hideModal);
 				
 		if (localStorage.getItem('darkMode') === 'true') {
