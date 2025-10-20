@@ -1115,6 +1115,21 @@
 		    font-size: inherit;
 		    font-family: inherit;
 		}
+		
+		/* Disable native text selection menu on mobile */
+		#editor {
+		    -webkit-touch-callout: none !important;
+		    -webkit-user-select: text !important;
+		    -moz-user-select: text !important;
+		    -ms-user-select: text !important;
+		    user-select: text !important;
+		}
+
+		/* Allow text selection but prevent native menu */
+		#editor * {
+		    -webkit-touch-callout: none !important;
+		}
+		
 		</style>
 		</head>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1452,10 +1467,11 @@
 		// ADD CUSTOM SELECTION MENU CODE HERE
 		// ============================================
 
-		// Custom Text Selection Menu with AI Features - FIXED VERSION
+		// Custom Text Selection Menu - MOBILE OPTIMIZED
 		var customSelectionMenu = {
 		    menuElement: null,
 		    isInteracting: false,
+		    hideTimeout: null,
     
 		    init: function() {
 		        // Create the custom menu
@@ -1468,16 +1484,16 @@
 		            border-radius: 12px;
 		            padding: 8px;
 		            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-		            z-index: 99999;
+		            z-index: 999999;
 		            flex-wrap: nowrap;
 		            gap: 4px;
+		            touch-action: manipulation;
+		            pointer-events: auto;
 		        `;
         
-		        // Menu buttons
+		        // Menu buttons - optimized for mobile
 		        var buttons = [
 		            { icon: 'content_copy', label: 'Copy', action: 'copy', color: '#3B82F6' },
-		            { icon: 'content_cut', label: 'Cut', action: 'cut', color: '#EF4444' },
-		            { icon: 'content_paste', label: 'Paste', action: 'paste', color: '#10B981' },
 		            { icon: 'auto_awesome', label: 'AI Suggest', action: 'ai-suggest', color: '#8B5CF6' },
 		            { icon: 'spellcheck', label: 'Proofread', action: 'ai-proofread', color: '#F59E0B' },
 		            { icon: 'translate', label: 'Translate', action: 'ai-translate', color: '#EC4899' }
@@ -1492,40 +1508,44 @@
 		                color: white;
 		                border: none;
 		                border-radius: 8px;
-		                padding: 10px 12px;
+		                padding: 12px 14px;
 		                cursor: pointer;
 		                display: flex;
 		                flex-direction: column;
 		                align-items: center;
 		                gap: 4px;
-		                min-width: 60px;
+		                min-width: 70px;
 		                font-size: 10px;
-		                transition: transform 0.2s;
+		                transition: transform 0.1s;
+		                touch-action: manipulation;
+		                pointer-events: auto;
+		                -webkit-tap-highlight-color: transparent;
 		            `;
             
 		            button.innerHTML = `
-		                <span class="material-symbols-outlined" style="font-size: 20px;">${btn.icon}</span>
-		                <span style="font-size: 9px; white-space: nowrap;">${btn.label}</span>
+		                <span class="material-symbols-outlined" style="font-size: 22px;">${btn.icon}</span>
+		                <span style="font-size: 10px; white-space: nowrap;">${btn.label}</span>
 		            `;
             
-		            // FIXED: Prevent event bubbling
-		            button.addEventListener('mousedown', function(e) {
-		                e.preventDefault();
-		                e.stopPropagation();
-		            });
-            
+		            // Mobile-optimized event handlers
 		            button.addEventListener('touchstart', function(e) {
-		                e.preventDefault();
 		                e.stopPropagation();
-		                this.style.transform = 'scale(0.95)';
-		            });
+		                this.style.transform = 'scale(0.92)';
+		                customSelectionMenu.isInteracting = true;
+		            }, { passive: false });
             
 		            button.addEventListener('touchend', function(e) {
 		                e.preventDefault();
 		                e.stopPropagation();
 		                this.style.transform = 'scale(1)';
-		            });
+                
+		                // Execute action immediately
+		                setTimeout(function() {
+		                    customSelectionMenu.handleAction(btn.action);
+		                }, 50);
+		            }, { passive: false });
             
+		            // Desktop fallback
 		            button.addEventListener('click', function(e) {
 		                e.preventDefault();
 		                e.stopPropagation();
@@ -1535,60 +1555,52 @@
 		            this.menuElement.appendChild(button);
 		        }, this);
         
-		        // FIXED: Prevent menu from closing when interacting with it
-		        this.menuElement.addEventListener('mousedown', function(e) {
-		            e.preventDefault();
-		            e.stopPropagation();
-		            customSelectionMenu.isInteracting = true;
-		        });
-        
+		        // Prevent menu from closing when touching it
 		        this.menuElement.addEventListener('touchstart', function(e) {
-		            e.preventDefault();
 		            e.stopPropagation();
 		            customSelectionMenu.isInteracting = true;
-		        });
+		        }, { passive: false });
+        
+		        this.menuElement.addEventListener('touchmove', function(e) {
+		            e.stopPropagation();
+		        }, { passive: false });
         
 		        document.body.appendChild(this.menuElement);
         
 		        // Listen for text selection
 		        document.addEventListener('selectionchange', this.onSelectionChange.bind(this));
         
-		        // FIXED: Better click outside handler
-		        document.addEventListener('mousedown', function(e) {
-		            if (customSelectionMenu.isInteracting) {
-		                customSelectionMenu.isInteracting = false;
-		                return;
-		            }
-		            if (!customSelectionMenu.menuElement.contains(e.target)) {
-		                customSelectionMenu.hide();
-		            }
-		        });
-        
+		        // Hide menu when touching outside
 		        document.addEventListener('touchstart', function(e) {
 		            if (customSelectionMenu.isInteracting) {
-		                customSelectionMenu.isInteracting = false;
 		                return;
 		            }
 		            if (!customSelectionMenu.menuElement.contains(e.target)) {
 		                customSelectionMenu.hide();
 		            }
-		        });
+		        }, { passive: true });
 		    },
     
 		    onSelectionChange: function() {
+		        var self = this;
+        
+		        // Clear any existing timeout
+		        if (this.hideTimeout) {
+		            clearTimeout(this.hideTimeout);
+		        }
+        
 		        var selection = window.getSelection();
 		        var selectedText = selection.toString().trim();
         
 		        if (selectedText.length > 0) {
-		            // Show menu after a short delay
-		            setTimeout(function() {
+		            // Show menu after delay
+		            this.hideTimeout = setTimeout(function() {
 		                var sel = window.getSelection();
-		                if (sel.toString().trim().length > 0) {
-		                    customSelectionMenu.show();
+		                if (sel.toString().trim().length > 0 && !self.isInteracting) {
+		                    self.show();
 		                }
-		            }, 200); // Increased delay to 200ms
+		            }, 300);
 		        } else {
-		            // Don't hide immediately if user is interacting
 		            if (!this.isInteracting) {
 		                this.hide();
 		            }
@@ -1604,29 +1616,35 @@
         
 		        this.menuElement.style.display = 'flex';
         
+		        // Force layout calculation
+		        this.menuElement.offsetHeight;
+        
 		        // Position above selection
-		        var menuHeight = 80;
-		        var left = rect.left + (rect.width / 2) - (this.menuElement.offsetWidth / 2);
-		        var top = rect.top - menuHeight;
+		        var menuWidth = this.menuElement.offsetWidth;
+		        var menuHeight = 90;
+		        var left = rect.left + (rect.width / 2) - (menuWidth / 2);
+		        var top = rect.top - menuHeight - 10;
         
 		        // Keep within viewport
 		        var viewportWidth = window.innerWidth;
 		        if (left < 10) left = 10;
-		        if (left + this.menuElement.offsetWidth > viewportWidth - 10) {
-		            left = viewportWidth - this.menuElement.offsetWidth - 10;
+		        if (left + menuWidth > viewportWidth - 10) {
+		            left = viewportWidth - menuWidth - 10;
 		        }
         
 		        // If menu would be off-screen top, show below selection
-		        if (top < 10) {
+		        if (top < 60) {
 		            top = rect.bottom + 10;
 		        }
         
 		        this.menuElement.style.left = left + 'px';
 		        this.menuElement.style.top = (top + window.scrollY) + 'px';
+		        this.menuElement.style.opacity = '1';
 		    },
     
 		    hide: function() {
 		        this.menuElement.style.display = 'none';
+		        this.menuElement.style.opacity = '0';
 		        this.isInteracting = false;
 		    },
     
@@ -1634,46 +1652,86 @@
 		        var selection = window.getSelection();
 		        var selectedText = selection.toString().trim();
         
+		        this.isInteracting = false;
+        
 		        switch(action) {
 		            case 'copy':
 		                document.execCommand('copy');
 		                showCustomAlert('Copied', 'Text copied to clipboard');
-		                break;
-                
-		            case 'cut':
-		                document.execCommand('cut');
-		                showCustomAlert('Cut', 'Text cut to clipboard');
-		                break;
-                
-		            case 'paste':
-		                document.execCommand('paste');
+		                this.hide();
 		                break;
                 
 		            case 'ai-suggest':
 		                this.hide();
-		                handleAction('ai-suggest');
+		                setTimeout(function() {
+		                    handleAction('ai-suggest');
+		                }, 100);
 		                break;
                 
 		            case 'ai-proofread':
 		                this.hide();
-		                handleAction('ai-proofread');
+		                setTimeout(function() {
+		                    handleAction('ai-proofread');
+		                }, 100);
 		                break;
                 
 		            case 'ai-translate':
 		                this.hide();
-		                handleAction('ai-translate');
+		                setTimeout(function() {
+		                    handleAction('ai-translate');
+		                }, 100);
 		                break;
 		        }
-        
-		        this.hide();
 		    }
 		};
+		
 
 		// Initialize custom selection menu
 		customSelectionMenu.init();
 		window.customSelectionMenu = customSelectionMenu;
 		
-		
+		// ============================================
+		// DISABLE NATIVE CONTEXT MENU ON MOBILE
+		// ============================================
+
+		// Prevent default context menu on long press
+		var editor = document.getElementById('editor');
+		if (editor) {
+		    // Prevent native context menu
+		    editor.addEventListener('contextmenu', function(e) {
+		        e.preventDefault();
+		        e.stopPropagation();
+		        return false;
+		    });
+    
+		    // Detect long press on mobile and prevent native menu
+		    var longPressTimer;
+		    var longPressDelay = 500; // milliseconds
+    
+		    editor.addEventListener('touchstart', function(e) {
+		        // Don't interfere if user is tapping menu buttons
+		        if (e.target.closest('#custom-selection-menu')) {
+		            return;
+		        }
+        
+		        longPressTimer = setTimeout(function() {
+		            // This is a long press - do nothing to allow text selection
+		            // but the contextmenu event will prevent native menu
+		        }, longPressDelay);
+		    }, { passive: true });
+    
+		    editor.addEventListener('touchend', function() {
+		        clearTimeout(longPressTimer);
+		    }, { passive: true });
+    
+		    editor.addEventListener('touchmove', function() {
+		        clearTimeout(longPressTimer);
+		    }, { passive: true });
+		}
+
+		// =================================
+		// END NATIVE CONTEXT MENU DISABLE
+		// =================================
 
 		    // Re-apply on orientation change
 		    window.addEventListener('resize', function() {
