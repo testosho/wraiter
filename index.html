@@ -2230,6 +2230,7 @@ function toggleAiPanel() {
 	                    '<option value="mistral">Mistral AI</option>' +
 	                    '<option value="together">Together AI</option>' +
 	                    '<option value="custom">Custom Provider</option>' +
+			 '<option value="localserver">Local Server</option>' +
 	                '</select>' +
 	            '</div>' +
             
@@ -4109,10 +4110,13 @@ function toggleAiPanel() {
 		    throw new Error('No AI services available. Please add Custom APIs or load a local model.');
 		}
 
-		// ✅ Universal API caller function
+
 		// ✅ Universal API caller function - PRIORITY ORDERED VERSION
 		async function callCustomAPI(url, key, prompt) {
 		    console.log('🔄 Attempting API call to:', url);
+			
+			
+			
     
 		    // ✅ FORMAT ATTEMPTS IN YOUR PREFERRED ORDER
 		    const formatAttempts = [
@@ -4297,7 +4301,41 @@ function toggleAiPanel() {
 		            extract: function(data) {
 		                return data.content && data.content[0] ? data.content[0].text : null;
 		            }
-		        }
+		        },
+				
+				// 10. LOCAL SERVER (Works with LM Studio, Ollama, Jan, etc.)
+				{
+				    name: 'Local Server',
+				    condition: function() {
+				        // Detect local server URLs
+				        return url.includes('127.0.0.1') || 
+				               url.includes('localhost') || 
+				               url.includes('192.168.') ||
+				               url.includes('10.0.0.') ||
+				               url.includes(':1234') ||  // LM Studio default
+				               url.includes(':11434');   // Ollama default
+				    },
+				    headers: { 'Content-Type': 'application/json' },
+				    body: function() {
+				        return {
+				            messages: [{ role: 'user', content: prompt }]
+				        };
+				    },
+				    extract: function(data) {
+				        // Try multiple response formats
+				        if (data.choices && data.choices[0] && data.choices[0].message) {
+				            return data.choices[0].message.content;
+				        }
+				        else if (data.response) {
+				            return data.response;
+				        }
+				        else if (data.message && data.message.content) {
+				            return data.message.content;
+				        }
+				        return null;
+				    }
+				}
+		
 		    ];
     
 		    // ✅ TRY EACH FORMAT IN ORDER
