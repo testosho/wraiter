@@ -43,6 +43,7 @@
 			    <button data-action="manage-apis">AI Settings</button>
 			    <button data-action="local-instructions">Local AI Setup</button>
 			    <button data-action="local-ai">Local AI</button>
+				<button data-action="customize-selection-menu">Customize Buttons</button>
 			    <hr style="border-color: var(--mobile-border-color); margin: 6px 0;">
 				<button data-action="open-text-file">Open</button>
 				<button data-action="toggle-preview">Preview</button>
@@ -57,6 +58,8 @@
 		    <button id="ai-status-btn" data-action="toggle-ai-panel" class="header-btn">
 		        <span class="material-symbols-outlined">memory</span>
 		    </button>
+			
+			
 		    <button data-action="undo" class="header-btn">
 		        <span class="material-symbols-outlined">undo</span>
 		    </button>
@@ -145,6 +148,26 @@
 			<span id="word-count" style="color: var(--mobile-btn-color); padding: 8px 12px; font-size: 12px; opacity: 0.7;">0 words | 0 chars</span>
 		</div>
 		
+		<!-- Selection Menu Customizer Modal - ADD THIS BEFORE </body> -->
+		<div id="selection-menu-customizer-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center;">
+		    <div style="background: var(--modal-bg); width: 90%; max-width: 500px; border-radius: 12px; padding: 20px; max-height: 80vh; overflow-y: auto;">
+		        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+		            <h3 style="margin: 0; font-size: 18px;">Customize Buttons</h3>
+		            <button onclick="closeSelectionMenuCustomizer()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: var(--modal-text);">×</button>
+		        </div>
+        
+		        <p style="font-size: 14px; opacity: 0.7; margin-bottom: 20px;">Select which actions appear when you select text (max 8 items)</p>
+        
+		        <div id="selection-menu-options" style="display: grid; gap: 10px;"></div>
+        
+		        <div style="display: flex; gap: 10px; margin-top: 20px;">
+		            <button onclick="resetSelectionMenu()" style="flex: 1; padding: 12px; background: #6B7280; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Reset to Default</button>
+		            <button onclick="saveSelectionMenu()" style="flex: 1; padding: 12px; background: #10B981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Save</button>
+		        </div>
+		    </div>
+		</div>
+
+		</body>
 		
 		
 		
@@ -632,38 +655,101 @@
 		    color: grey;
 		}
 
+		/* AI Panel - Mobile: Full screen overlay | Desktop: Right sidebar */
 		#ai-top-panel {
 		    position: fixed;
-		    top: 50px;
-		    left: 0;
-		    right: 0;
-		    bottom: 0;
 		    background-color: var(--mobile-bar-bg);
 		    z-index: 20000;
 		    display: none;
-		    transform: translateY(-100%);
 		    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		}
 
-		#ai-top-panel.show {
-		    display: block;
-		    transform: translateY(0);
+		/* Mobile: Full screen overlay (default) */
+		@media (max-width: 768px) {
+		    #ai-top-panel {
+		        top: 50px;
+		        left: 0;
+		        right: 0;
+		        bottom: 0;
+		        transform: translateY(-100%);
+		    }
+    
+		    #ai-top-panel.show {
+		        display: block;
+		        transform: translateY(0);
+		    }
 		}
 
-		#ai-panel-content {
-		    height: 100%;
-		    /* ✅ FIX: Added 60px padding to the bottom */
-		    padding: 15px 15px 57px 15px;
-		    overflow-y: auto;
-		    background-color: var(--mobile-bar-bg);
-		    box-sizing: border-box; /* Ensures padding is calculated correctly */
+		/* Desktop/Tablet: Right sidebar */
+		@media (min-width: 769px) {
+		    #ai-top-panel {
+		        top: 50px;
+		        right: 0;
+		        bottom: 0;
+		        width: 350px;
+		        border-left: 2px solid var(--mobile-border-color);
+		        box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+		        transform: translateX(100%);
+				overflow-y: auto;  /* ✅ ADD THIS */
+				        display: flex;  /* ✅ ADD THIS */
+				        flex-direction: column;  /* ✅ ADD THIS */
+		    }
+    
+		    #ai-top-panel.show {
+		           display: flex; 
+		        transform: translateX(0);
+		    }
+    
+		    /* Push editor content left when panel is open */
+		    body.ai-panel-open .main-container {
+		        margin-right: 350px;
+		    }
+    
+		    body.ai-panel-open #editor {
+		        padding-right: 20px;
+		    }
+		}
+		
+		/* Selection Menu Customizer */
+		.selection-menu-option {
+		    display: flex;
+		    align-items: center;
+		    padding: 12px;
+		    background: rgba(0,0,0,0.03);
+		    border-radius: 8px;
+		    border: 2px solid transparent;
+		    cursor: pointer;
+		    transition: all 0.2s ease;
 		}
 
-		/* Fix for content scrolling */
-		#ai-panel-content > div {
-		    max-height: none !important;
-		    overflow-y: visible !important;
+		.dark-mode .selection-menu-option {
+		    background: rgba(255,255,255,0.03);
 		}
+
+		.selection-menu-option.selected {
+		    border-color: #10B981;
+		    background: rgba(16, 185, 129, 0.1);
+		}
+
+		.selection-menu-option input[type="checkbox"] {
+		    width: 20px;
+		    height: 20px;
+		    margin-right: 12px;
+		    cursor: pointer;
+		}
+
+		.selection-menu-option-icon {
+		    font-size: 20px;
+		    margin-right: 10px;
+		    color: var(--mobile-btn-color);
+		}
+
+		.selection-menu-option-label {
+		    flex: 1;
+		    font-weight: 500;
+		}
+		
+		
 
 		.popup-menu {
 		    display: none;
@@ -1467,8 +1553,7 @@
 		// ADD CUSTOM SELECTION MENU CODE HERE
 		// ============================================
 
-		// Custom Text Selection Menu - MOBILE OPTIMIZED
-		// Custom Text Selection Menu - COMPLETE WORKING VERSION
+		// Custom Text Selection Menu - DYNAMIC VERSION
 		var customSelectionMenu = {
 		    menuElement: null,
 		    isInteracting: false,
@@ -1481,9 +1566,7 @@
 		        this.menuElement = document.createElement('div');
 		        this.menuElement.id = 'custom-selection-menu';
         
-		        // Detect if mobile
-		        var isMobile = window.innerWidth < 768;
-        
+		        var isMobile = window.innerWidth <= 768;
 		        this.menuElement.style.cssText = `
 		            position: fixed;
 		            display: none;
@@ -1499,24 +1582,61 @@
 		            max-width: ${isMobile ? '95vw' : 'none'};
 		        `;
         
-		        // ALL 6 BUTTONS - responsive sizing
-		        var buttons = [
-		            { icon: 'content_copy', label: 'Copy', action: 'copy', color: '#3B82F6' },
-		            { icon: 'content_cut', label: 'Cut', action: 'cut', color: '#EF4444' },
-		            { icon: 'content_paste', label: 'Paste', action: 'paste', color: '#10B981' },
-		            { icon: 'auto_awesome', label: 'AI Suggest', action: 'ai-suggest', color: '#8B5CF6' },
-		            { icon: 'spellcheck', label: 'Proofread', action: 'ai-proofread', color: '#F59E0B' },
-		            { icon: 'translate', label: 'Translate', action: 'ai-translate', color: '#EC4899' }
-		        ];
+		        // ✅ Build menu dynamically - will be populated by buildCustomSelectionMenu()
+		        document.body.appendChild(this.menuElement);
         
-		        buttons.forEach(function(btn) {
+		        // Listen for text selection
+		        document.addEventListener('selectionchange', this.onSelectionChange.bind(this));
+        
+		        // Hide menu when touching outside
+		        document.addEventListener('touchstart', function(e) {
+		            if (self.isInteracting) return;
+		            if (!self.menuElement.contains(e.target)) {
+		                self.hide();
+		            }
+		        }, {passive: true});
+        
+		        document.addEventListener('mousedown', function(e) {
+		            if (self.isInteracting) {
+		                self.isInteracting = false;
+		                return;
+		            }
+		            if (!self.menuElement.contains(e.target)) {
+		                self.hide();
+		            }
+		        });
+        
+		        // Prevent menu from closing when touching it
+		        this.menuElement.addEventListener('touchstart', function(e) {
+		            e.stopPropagation();
+		            self.isInteracting = true;
+		        }, {passive: false});
+        
+		        this.menuElement.addEventListener('mousedown', function(e) {
+		            e.stopPropagation();
+		            self.isInteracting = true;
+		        });
+		    },
+    
+		    // ✅ NEW METHOD: Rebuild buttons based on user's selection
+		    rebuild: function() {
+		        var isMobile = window.innerWidth <= 768;
+		        var menuActions = getCustomSelectionMenu();
+        
+		        // Clear existing buttons
+		        this.menuElement.innerHTML = '';
+        
+		        // Add buttons based on user's custom selection
+		        menuActions.forEach(function(action) {
+		            var actionData = availableSelectionActions.find(function(a) { return a.action === action; });
+		            if (!actionData) return;
+            
 		            var button = document.createElement('button');
 		            button.className = 'selection-menu-btn';
-		            button.setAttribute('data-action', btn.action);
+		            button.setAttribute('data-action', actionData.action);
             
-		            // Responsive button sizing
 		            button.style.cssText = `
-		                background: ${btn.color};
+		                background: #3B82F6;
 		                color: white;
 		                border: none;
 		                border-radius: ${isMobile ? '6px' : '8px'};
@@ -1537,87 +1657,43 @@
 		            `;
             
 		            button.innerHTML = `
-		                <span class="material-symbols-outlined" style="font-size: ${isMobile ? '18px' : '22px'};">${btn.icon}</span>
-		                <span style="font-size: ${isMobile ? '8px' : '10px'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${btn.label}</span>
+		                <span class="material-symbols-outlined" style="font-size: ${isMobile ? '18px' : '22px'}">${actionData.icon}</span>
+		                <span style="font-size: ${isMobile ? '8px' : '10px'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">${actionData.label}</span>
 		            `;
             
-		            // Store action on button element
-		            button.btnAction = btn.action;
+		            // Store action
+		            button.btnAction = actionData.action;
             
-		            // Mobile touch events
+		            // Add event listeners
+		            var self = this;
 		            button.addEventListener('touchstart', function(e) {
 		                e.stopPropagation();
 		                this.style.transform = 'scale(0.92)';
 		                self.isInteracting = true;
-		            }, { passive: false });
+		            }, {passive: false});
             
 		            button.addEventListener('touchend', function(e) {
 		                e.preventDefault();
 		                e.stopPropagation();
 		                this.style.transform = 'scale(1)';
-                
 		                var action = this.btnAction;
-		                // Execute action immediately
 		                setTimeout(function() {
-		                    self.handleAction(action);
+		                    customSelectionMenu.handleAction(action);
 		                }, 50);
-		            }, { passive: false });
+		            }, {passive: false});
             
-		            // Desktop click
 		            button.addEventListener('click', function(e) {
 		                e.preventDefault();
 		                e.stopPropagation();
-		                self.handleAction(this.btnAction);
+		                customSelectionMenu.handleAction(this.btnAction);
 		            });
             
-		            self.menuElement.appendChild(button);
-		        });
-        
-		        // Prevent menu from closing when touching it
-		        this.menuElement.addEventListener('touchstart', function(e) {
-		            e.stopPropagation();
-		            self.isInteracting = true;
-		        }, { passive: false });
-        
-		        this.menuElement.addEventListener('touchmove', function(e) {
-		            e.stopPropagation();
-		        }, { passive: false });
-        
-		        this.menuElement.addEventListener('mousedown', function(e) {
-		            e.stopPropagation();
-		            self.isInteracting = true;
-		        });
-        
-		        document.body.appendChild(this.menuElement);
-        
-		        // Listen for text selection
-		        document.addEventListener('selectionchange', this.onSelectionChange.bind(this));
-        
-		        // Hide menu when touching outside
-		        document.addEventListener('touchstart', function(e) {
-		            if (self.isInteracting) {
-		                return;
-		            }
-		            if (!self.menuElement.contains(e.target)) {
-		                self.hide();
-		            }
-		        }, { passive: true });
-        
-		        document.addEventListener('mousedown', function(e) {
-		            if (self.isInteracting) {
-		                self.isInteracting = false;
-		                return;
-		            }
-		            if (!self.menuElement.contains(e.target)) {
-		                self.hide();
-		            }
-		        });
+		            this.menuElement.appendChild(button);
+		        }.bind(this));
 		    },
     
 		    onSelectionChange: function() {
 		        var self = this;
-        
-		        // Clear any existing timeout
 		        if (this.hideTimeout) {
 		            clearTimeout(this.hideTimeout);
 		        }
@@ -1626,21 +1702,21 @@
 		        var selectedText = selection.toString().trim();
         
 		        if (selectedText.length > 0) {
-		            // Show menu after delay
 		            this.hideTimeout = setTimeout(function() {
 		                var sel = window.getSelection();
 		                if (sel.toString().trim().length > 0 && !self.isInteracting) {
 		                    self.show();
 		                }
 		            }, 300);
-		        } else {
-		            if (!this.isInteracting) {
-		                this.hide();
-		            }
+		        } else if (!this.isInteracting) {
+		            this.hide();
 		        }
 		    },
     
 		    show: function() {
+		        // ✅ Rebuild menu with user's current selections
+		        this.rebuild();
+        
 		        var selection = window.getSelection();
 		        if (!selection.rangeCount) return;
         
@@ -1648,24 +1724,19 @@
 		        var rect = range.getBoundingClientRect();
         
 		        this.menuElement.style.display = 'flex';
+		        this.menuElement.offsetHeight; // Force layout
         
-		        // Force layout calculation
-		        this.menuElement.offsetHeight;
-        
-		        // Position above selection
 		        var menuWidth = this.menuElement.offsetWidth;
 		        var menuHeight = this.menuElement.offsetHeight;
+        
 		        var left = rect.left + (rect.width / 2) - (menuWidth / 2);
 		        var top = rect.top - menuHeight - 10;
         
-		        // Keep within viewport
-		        var viewportWidth = window.innerWidth;
 		        if (left < 10) left = 10;
-		        if (left + menuWidth > viewportWidth - 10) {
-		            left = viewportWidth - menuWidth - 10;
+		        if (left + menuWidth > window.innerWidth - 10) {
+		            left = window.innerWidth - menuWidth - 10;
 		        }
         
-		        // If menu would be off-screen top, show below selection
 		        if (top < 60) {
 		            top = rect.bottom + 10;
 		        }
@@ -1707,44 +1778,24 @@
                 
 		            case 'paste':
 		                this.hide();
-		                // Try modern clipboard API first
-		                if (navigator.clipboard && navigator.clipboard.readText) {
+		                if (navigator.clipboard) {
 		                    navigator.clipboard.readText().then(function(text) {
 		                        document.execCommand('insertText', false, text);
 		                        showCustomAlert('Pasted', 'Text pasted from clipboard');
 		                    }).catch(function() {
-		                        // Fallback
 		                        document.execCommand('paste');
 		                    });
 		                } else {
-		                    // Fallback for older browsers
 		                    document.execCommand('paste');
 		                }
 		                break;
                 
-		            case 'ai-suggest':
+		            default:
+		                // For all other actions (AI tools, formatting, etc.), call handleAction
 		                this.hide();
 		                setTimeout(function() {
 		                    if (typeof handleAction === 'function') {
-		                        handleAction('ai-suggest');
-		                    }
-		                }, 150);
-		                break;
-                
-		            case 'ai-proofread':
-		                this.hide();
-		                setTimeout(function() {
-		                    if (typeof handleAction === 'function') {
-		                        handleAction('ai-proofread');
-		                    }
-		                }, 150);
-		                break;
-                
-		            case 'ai-translate':
-		                this.hide();
-		                setTimeout(function() {
-		                    if (typeof handleAction === 'function') {
-		                        handleAction('ai-translate');
+		                        handleAction(action);
 		                    }
 		                }, 150);
 		                break;
@@ -1755,6 +1806,7 @@
 		// Initialize custom selection menu
 		customSelectionMenu.init();
 		window.customSelectionMenu = customSelectionMenu;
+		
 		
 		// ============================================
 		// DISABLE NATIVE CONTEXT MENU ON MOBILE
@@ -1911,23 +1963,24 @@
 		}
 
 
+		// Update showAiPanel function
 		function showAiPanel() {
-		    // HIDE FOOTER WHEN AI HISTORY PANEL IS OPEN  
-		    document.getElementById('mobile-bottom-bar').style.display = 'none';
-
-		    // ✅ RESET DISPLAY AND TRANSFORM BEFORE SHOWING
+		    const isDesktop = window.innerWidth > 768;
+    
+		    if (!isDesktop) {
+		        // Mobile: Hide footer
+		        document.getElementById('mobile-bottom-bar').style.display = 'none';
+		    }
+    
 		    aiTopPanel.style.display = 'flex';
-		    aiTopPanel.style.transform = 'translateY(-100%)';
-
-		    // ✅ FORCE REFLOW THEN ANIMATE IN
+		    aiTopPanel.style.transform = isDesktop ? 'translateX(100%)' : 'translateY(-100%)';
+    
 		    requestAnimationFrame(() => {
 		        aiTopPanel.classList.add('show');
-		        aiTopPanel.style.transform = 'translateY(0)';
+		        aiTopPanel.style.transform = isDesktop ? 'translateX(0)' : 'translateY(0)';
 		    });
-
-		    displayAiHistory();
     
-		    // 🔧 ADD: Show banner ad
+		    // Show banner ad
 		    setTimeout(() => {
 		        if (window.TaskModelBridge) {
 		            TaskModelBridge.showAiHistoryBannerAd();
@@ -1935,62 +1988,88 @@
 		    }, 500);
 		}
 		
+		
 
 
+		// Update hideAiPanel function
 		function hideAiPanel() {
+		    const isDesktop = window.innerWidth > 768;
+    
 		    aiTopPanel.classList.remove('show');
     
-		    // IMMEDIATELY HIDE BANNER - NO DELAY
 		    if (window.TaskModelBridge) {
 		        TaskModelBridge.hideAiHistoryBannerAd();
 		    }
     
-		    // RESTORE FOOTER WHEN AI HISTORY PANEL IS CLOSED
-		    document.getElementById('mobile-bottom-bar').style.display = 'flex';
+		    if (!isDesktop) {
+		        // Mobile: Restore footer
+		        document.getElementById('mobile-bottom-bar').style.display = 'flex';
+		    }
     
 		    setTimeout(() => {
 		        aiTopPanel.style.display = 'none';
 		    }, 300);
     
-		    updateAiStatus(aiResults.length > 0 ? 'has-results' : '');
 		    document.getElementById('ai-status-btn').classList.remove('active');
+		    const aiPanelToggleBtn = document.getElementById('ai-panel-toggle-btn');
+		    if (aiPanelToggleBtn) aiPanelToggleBtn.classList.remove('active');
 		}
 		
 		
 
-// 🔄 REPLACE your existing toggleAiPanel function with this one.
-
-function toggleAiPanel() {
-    const aiButton = document.getElementById('ai-status-btn');
-
-    if (aiTopPanel.classList.contains('show')) {
-        // CLOSING PANEL - MARK AS VIEWED
-        hideAiPanel();
-        aiButton.classList.remove('active');
-        updateAiStatus('viewed'); // Stop flickering when viewed
-    } else {
-        // CLOSE OTHER PANELS FIRST
-        closePanelsExcept('ai');
-
-        // OPENING PANEL
-        if (aiResults.length > 0) {
-            // If there are results, show the history
-            displayAiHistory();
-            updateAiStatus('viewed'); // Stop flickering when opened
-        } else {
-            // ✅ NEW: If there are NO results, show a simple message.
-            // The full instructions are now handled by displayAiHistory().
-            document.querySelector('#ai-top-panel .ai-panel-content').innerHTML = 
-                '<div style="padding: 40px; text-align: center; opacity: 0.7; font-size: 16px;">' +
-                'No AI results yet.<br><br>Use AI tools to generate content.' +
-                '</div>';
-        }
-
-        showAiPanel();
-        aiButton.classList.add('active');
-    }
-}
-
+		// Toggle AI Panel - Desktop: Right side | Mobile: Full overlay
+		function toggleAiPanel() {
+		    const aiButton = document.getElementById('ai-status-btn');
+		    const aiPanelToggleBtn = document.getElementById('ai-panel-toggle-btn');
+		    const isDesktop = window.innerWidth > 768;
+    
+		    if (aiTopPanel.classList.contains('show')) {
+		        // CLOSING PANEL
+		        hideAiPanel();
+		        aiButton.classList.remove('active');
+		        if (aiPanelToggleBtn) aiPanelToggleBtn.classList.remove('active');
+		        updateAiStatus('viewed');
+        
+		        // Remove body class (desktop only)
+		        if (isDesktop) {
+		            document.body.classList.remove('ai-panel-open');
+		        }
+		    } else {
+		        // OPENING PANEL
+		        closePanelsExcept('ai');
+        
+		        // ✅ HIDE FORMATTING TOOLBAR ON MOBILE
+		        if (!isDesktop) {
+		            var toolbar = document.getElementById('formatting-toolbar');
+		            if (toolbar && toolbar.style.display !== 'none') {
+		                toolbar.style.display = 'none';
+		                // Reset format button highlight
+		                var formatBtn = document.querySelector('[data-action="toggle-format-toolbar"]');
+		                if (formatBtn) {
+		                    formatBtn.style.background = 'transparent';
+		                    formatBtn.style.color = 'var(--mobile-btn-color)';
+		                }
+		            }
+		        }
+        
+		        if (aiResults.length === 0) {
+		            aiPanelContent.innerHTML = '<div style="padding: 40px; text-align: center; opacity: 0.7; font-size: 16px;">No AI results yet.<br><br>Use AI tools to generate content.</div>';
+		        } else {
+		            displayAiHistory();
+		        }
+        
+		        showAiPanel();
+		        aiButton.classList.add('active');
+		        if (aiPanelToggleBtn) aiPanelToggleBtn.classList.add('active');
+		        updateAiStatus('viewed');
+        
+		        // Add body class (desktop only) to push content
+		        if (isDesktop) {
+		            document.body.classList.add('ai-panel-open');
+		        }
+		    }
+		}
+		
 		window.hideAiPanel = hideAiPanel;
 		window.toggleAiPanel = toggleAiPanel;
 
@@ -4660,19 +4739,42 @@ function toggleAiPanel() {
 		    var result = aiResults.find(function(r) { return r.id === resultId; });
 		    if (result) {
 		        insertTextAtCursor(result.text);
-		        setTimeout(hideAiPanel, 300);
+        
+		        // ✅ ONLY CLOSE ON MOBILE
+		        var isDesktop = window.innerWidth > 768;
+		        if (!isDesktop) {
+		            setTimeout(hideAiPanel, 300);
+		        }
 		    }
 		}
-
 
 		function copyAiResult(resultId) {
 		    var result = aiResults.find(function(r) { return r.id === resultId; });
 		    if (result) {
 		        copyToClipboard(result.text);
-		        setTimeout(hideAiPanel, 300);
+        
+		        // ✅ ONLY CLOSE ON MOBILE
+		        var isDesktop = window.innerWidth > 768;
+		        if (!isDesktop) {
+		            setTimeout(hideAiPanel, 300);
+		        }
 		    }
 		}
+		
 
+		function copyAiResult(resultId) {
+		    var result = aiResults.find(function(r) { return r.id === resultId; });
+		    if (result) {
+		        copyToClipboard(result.text);
+        
+		        // ✅ ONLY CLOSE ON MOBILE
+		        var isDesktop = window.innerWidth > 768;
+		        if (!isDesktop) {
+		            setTimeout(hideAiPanel, 300);
+		        }
+		    }
+		}
+		
 		window.insertAiResult = insertAiResult;
 		window.copyAiResult = copyAiResult;
 
@@ -5978,6 +6080,10 @@ function toggleAiPanel() {
 				    }
 				    break;
 					
+				case 'toggle-ai-panel':  // NEW: Desktop AI Panel toggle
+				    toggleAiPanel();
+				    break;
+					
 						
 					case 'toggle-format-toolbar':
 					    toggleFormattingToolbar();
@@ -6095,6 +6201,9 @@ function toggleAiPanel() {
 						
 					case 'export-unicode-pdf':
 					    exportUnicodePDFOnline();
+					    break;
+					case 'customize-selection-menu':
+					    openSelectionMenuCustomizer();
 					    break;
 						
 						
@@ -6842,6 +6951,148 @@ function toggleAiPanel() {
 
 		console.log('🚀 Wraiter v3 - Enhanced Experience');
 		});
+		
+		
+		// ✅ AVAILABLE ACTIONS FOR SELECTION MENU - MATCHES YOUR FOOTER BUTTONS
+		var availableSelectionActions = [
+		    // Basic editing
+		    { action: 'copy', label: 'Copy', icon: 'content_copy' },
+		    { action: 'cut', label: 'Cut', icon: 'content_cut' },
+		    { action: 'paste', label: 'Paste', icon: 'content_paste' },
+    
+		    // AI Tools (from AI Tools menu)
+		    { action: 'ai-suggest', label: 'AI Suggest', icon: 'auto_awesome' },
+		    { action: 'ai-proofread', label: 'AI Proofread', icon: 'spellcheck' },
+		    { action: 'ai-custom', label: 'AI Custom', icon: 'psychology' },
+		    { action: 'ai-translate', label: 'AI Translate', icon: 'translate' },
+    
+		    // Rewrite (from Rewrite menu)
+		    { action: 'rewrite-shorten', label: 'Shorten', icon: 'compress' },
+		    { action: 'rewrite-expand', label: 'Expand', icon: 'expand_content' },
+		    { action: 'rewrite-paraphrase', label: 'Paraphrase', icon: 'refresh' },
+		    { action: 'rewrite-grammar', label: 'Fix Grammar', icon: 'check_circle' },
+    
+		    // Styles (from Styles menu)
+		    { action: 'style-narrate', label: 'Narrate', icon: 'record_voice_over' },
+		    { action: 'style-visualize', label: 'Visualize', icon: 'visibility' },
+		    { action: 'style-explain', label: 'Explain', icon: 'info' },
+		    { action: 'style-creative', label: 'Creative', icon: 'palette' },
+    
+		    // Tone (from Tone menu)
+		    { action: 'tone-candid', label: 'Candid', icon: 'sentiment_satisfied' },
+		    { action: 'tone-humorous', label: 'Humorous', icon: 'sentiment_very_satisfied' },
+		    { action: 'tone-intense', label: 'Intense', icon: 'whatshot' },
+		    { action: 'tone-sarcastic', label: 'Sarcastic', icon: 'mood' },
+    
+		    // Formatting (from Format toolbar)
+		    { action: 'format-bold', label: 'Bold', icon: 'format_bold' },
+		    { action: 'format-italic', label: 'Italic', icon: 'format_italic' },
+		    { action: 'format-underline', label: 'Underline', icon: 'format_underlined' }
+		];
+		
+
+		// ✅ DEFAULT SELECTION MENU
+		var defaultSelectionMenu = ['copy', 'cut', 'paste', 'ai-suggest', 'proofread', 'translate'];
+
+		// ✅ GET USER'S CUSTOM SELECTION MENU
+		function getCustomSelectionMenu() {
+		    var saved = localStorage.getItem('customSelectionMenu');
+		    if (saved) {
+		        return JSON.parse(saved);
+		    }
+		    return defaultSelectionMenu;
+		}
+
+		// ✅ OPEN CUSTOMIZER MODAL
+		function openSelectionMenuCustomizer() {
+		    var modal = document.getElementById('selection-menu-customizer-modal');
+		    var optionsContainer = document.getElementById('selection-menu-options');
+		    var currentMenu = getCustomSelectionMenu();
+    
+		    // Build options list
+		    var html = '';
+		    availableSelectionActions.forEach(function(item) {
+		        var isChecked = currentMenu.includes(item.action);
+		        html += '<div class="selection-menu-option ' + (isChecked ? 'selected' : '') + '" onclick="toggleSelectionOption(\'' + item.action + '\')">';
+		        html += '<input type="checkbox" ' + (isChecked ? 'checked' : '') + ' onclick="event.stopPropagation(); toggleSelectionOption(\'' + item.action + '\')">';
+		        html += '<span class="material-symbols-outlined selection-menu-option-icon">' + item.icon + '</span>';
+		        html += '<span class="selection-menu-option-label">' + item.label + '</span>';
+		        html += '</div>';
+		    });
+    
+		    optionsContainer.innerHTML = html;
+		    modal.style.display = 'flex';
+		}
+
+		// ✅ CLOSE CUSTOMIZER MODAL
+		function closeSelectionMenuCustomizer() {
+		    var modal = document.getElementById('selection-menu-customizer-modal');
+		    modal.style.display = 'none';
+		}
+
+		// ✅ TOGGLE SELECTION OPTION
+		function toggleSelectionOption(action) {
+		    var currentMenu = getCustomSelectionMenu();
+		    var index = currentMenu.indexOf(action);
+    
+		    if (index > -1) {
+		        // Remove
+		        currentMenu.splice(index, 1);
+		    } else {
+		        // Add (max 8)
+		        if (currentMenu.length >= 8) {
+		            showCustomAlert('Maximum Reached', 'You can select up to 8 quick actions');
+		            return;
+		        }
+		        currentMenu.push(action);
+		    }
+    
+		    // Update display
+		    localStorage.setItem('customSelectionMenu', JSON.stringify(currentMenu));
+		    openSelectionMenuCustomizer(); // Refresh
+		}
+
+		// ✅ SAVE SELECTION MENU
+		function saveSelectionMenu() {
+		    closeSelectionMenuCustomizer();
+		    showCustomAlert('Saved', 'Selection menu updated successfully');
+    
+		    // Rebuild selection menu
+		    buildCustomSelectionMenu();
+		}
+
+		// ✅ RESET TO DEFAULT
+		function resetSelectionMenu() {
+		    localStorage.setItem('customSelectionMenu', JSON.stringify(defaultSelectionMenu));
+		    openSelectionMenuCustomizer(); // Refresh
+		}
+
+		// ✅ BUILD CUSTOM SELECTION MENU (Dynamic)
+		function buildCustomSelectionMenu() {
+		    var menuActions = getCustomSelectionMenu();
+		    var toolbar = customSelectionMenu.element;
+    
+		    // Clear existing buttons
+		    toolbar.innerHTML = '';
+    
+		    // Add custom buttons
+		    menuActions.forEach(function(action) {
+		        var actionData = availableSelectionActions.find(function(a) { return a.action === action; });
+		        if (!actionData) return;
+        
+		        var btn = document.createElement('button');
+		        btn.className = 'selection-btn';
+		        btn.setAttribute('data-action', action);
+		        btn.innerHTML = '<span class="material-symbols-outlined">' + actionData.icon + '</span><span>' + actionData.label + '</span>';
+		        toolbar.appendChild(btn);
+		    });
+		}
+
+		// ✅ INITIALIZE ON LOAD
+		document.addEventListener('DOMContentLoaded', function() {
+		    buildCustomSelectionMenu();
+		});
+		
 
 		</script>
 		</body>
