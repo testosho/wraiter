@@ -112,8 +112,9 @@
 		    <div id="file-library-content" style="padding: 8px; overflow-y: auto; height: calc(100% - 50px);"></div>
 		</div>
 		
-		<!-- Formatting Toolbar (appears above footer when Format button clicked) -->
-		<div id="formatting-toolbar" style="display: none; position: fixed; bottom: 48px; left: 0; right: 0; background: var(--mobile-bar-bg); border-top: 1px solid var(--mobile-border-color); padding: 8px; z-index: 24999; overflow-x: auto; white-space: nowrap;">
+		<!-- Formatting Toolbar appears below top bar when Format button clicked -->
+		<div id="formatting-toolbar" style="display: none; position: fixed; top: 50px; left: 0; right: 0; background: var(--mobile-bar-bg); border-bottom: 1px solid var(--mobile-border-color); padding: 4px; z-index: 24999; overflow-x: auto; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+		
 		    <button data-action="format-font-increase" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 18px; font-weight: bold;">A+</button>
 		    <button data-action="format-font-decrease" style="background: none; border: none; color: var(--mobile-btn-color); padding: 8px 12px; cursor: pointer; font-size: 12px; font-weight: bold;">A-</button>
 		    <span style="display: inline-block; width: 1px; height: 20px; background: var(--mobile-border-color); margin: 0 8px;"></span>
@@ -691,7 +692,7 @@
 		        box-shadow: -4px 0 20px rgba(0,0,0,0.15);
 		        transform: translateX(100%);
 				overflow-y: auto;  /* ✅ ADD THIS */
-				        display: flex;  /* ✅ ADD THIS */
+				        display: none; /* ✅ ADD THIS */
 				        flex-direction: column;  /* ✅ ADD THIS */
 		    }
     
@@ -1993,27 +1994,43 @@
 
 		// Update hideAiPanel function
 		function hideAiPanel() {
-		    const isDesktop = window.innerWidth > 768;
+		    const isDesktop = window.innerWidth >= 768;
     
 		    aiTopPanel.classList.remove('show');
     
+		    // Hide fallback ad
 		    if (window.TaskModelBridge) {
 		        TaskModelBridge.hideAiHistoryBannerAd();
 		    }
     
+		    // Mobile: Restore footer
 		    if (!isDesktop) {
-		        // Mobile: Restore footer
 		        document.getElementById('mobile-bottom-bar').style.display = 'flex';
 		    }
     
-		    setTimeout(() => {
+		    // ✅ FIX: Force display none immediately on desktop
+		    if (isDesktop) {
 		        aiTopPanel.style.display = 'none';
-		    }, 300);
+		    } else {
+		        // Mobile: Wait for animation
+		        setTimeout(function() {
+		            aiTopPanel.style.display = 'none';
+		        }, 300);
+		    }
     
 		    document.getElementById('ai-status-btn').classList.remove('active');
+    
 		    const aiPanelToggleBtn = document.getElementById('ai-panel-toggle-btn');
-		    if (aiPanelToggleBtn) aiPanelToggleBtn.classList.remove('active');
+		    if (aiPanelToggleBtn) {
+		        aiPanelToggleBtn.classList.remove('active');
+		    }
+    
+		    // Remove desktop body class
+		    if (isDesktop) {
+		        document.body.classList.remove('ai-panel-open');
+		    }
 		}
+		
 		
 		
 
@@ -2742,13 +2759,11 @@
 	
 	function toggleFormattingToolbar() {
 	    var toolbar = document.getElementById('formatting-toolbar');
-	    var bottomBar = document.getElementById('mobile-bottom-bar');
 	    var formatBtn = document.querySelector('[data-action="toggle-format-toolbar"]');
     
 	    if (toolbar.style.display === 'none' || !toolbar.style.display) {
 	        // Show toolbar
 	        toolbar.style.display = 'block';
-	        bottomBar.style.bottom = '0';
         
 	        // Highlight format button
 	        if (formatBtn) {
@@ -2756,8 +2771,8 @@
 	            formatBtn.style.color = '#4285F4';
 	        }
         
-	        // Update editor padding
-	        editor.style.paddingBottom = 'calc(var(--footer-height) * var(--display-scale) + var(--keyboard-height) + 100px)';
+	        // Adjust editor padding to account for toolbar at top
+	        editor.style.paddingTop = '80px';  // ✅ Add top padding instead
 	    } else {
 	        // Hide toolbar
 	        toolbar.style.display = 'none';
@@ -2769,11 +2784,12 @@
 	        }
         
 	        // Restore editor padding
-	        editor.style.paddingBottom = 'calc(var(--footer-height) * var(--display-scale) + var(--keyboard-height) + 60px)';
+	        editor.style.paddingTop = '20px';  // ✅ Reset top padding
 	    }
 	}
 
 	window.toggleFormattingToolbar = toggleFormattingToolbar;
+	
 	
 
 		function customAlert(title, message) {
@@ -4076,22 +4092,41 @@
 		    var topBar = document.getElementById('mobile-top-bar');
     
 		    if (previewPanel.style.display === 'none') {
-		        var text = editor.innerText || editor.textContent;
-		        var html = '';
+		        // ✅ STEP 1: Get HTML content (preserves <b>, <i>, <u>, etc.)
+		        var htmlContent = editor.innerHTML;
         
-		        // Apply markdown first (handles bold, italic, links, headers)
-		        if (typeof marked !== 'undefined') {
-		            html = marked.parse(text);
-		        } else {
-		            html = parseMarkdownOffline(text);
+		        // ✅ STEP 2: Convert HTML entities and tags to plain text for parsing
+		        var tempDiv = document.createElement('div');
+		        tempDiv.innerHTML = htmlContent;
+		        var plainText = tempDiv.innerText || tempDiv.textContent;
+        
+		        var finalHtml = '';
+        
+		        // ✅ STEP 3: Check if it's Fountain screenplay format
+		        if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/im.test(plainText)) {
+		            // Parse as Fountain screenplay
+		            finalHtml = parseFountainOffline(plainText);
+		        } 
+		        // ✅ STEP 4: Check if it contains markdown syntax
+		        else if (/[\*_#\[\]]/g.test(plainText)) {
+		            // Parse as Markdown
+		            if (typeof marked !== 'undefined') {
+		                finalHtml = marked.parse(plainText);
+		            } else {
+		                finalHtml = parseMarkdownOffline(plainText);
+		            }
+		        } 
+		        // ✅ STEP 5: Otherwise, use the formatted HTML directly
+		        else {
+		            // Clean up the HTML but preserve formatting tags
+		            finalHtml = htmlContent
+		                .replace(/<div>/g, '')
+		                .replace(/<\/div>/g, '<br>')
+		                .replace(/<br><br>/g, '<br>')
+		                .replace(/^<br>/, '');
 		        }
         
-		        // Then apply fountain formatting on top (for screenplay structure)
-		        if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/im.test(text)) {
-		            html = parseFountainOffline(text);
-		        }
-        
-		        previewContent.innerHTML = html;
+		        previewContent.innerHTML = finalHtml;
 		        editor.style.display = 'none';
 		        previewPanel.style.display = 'block';
 		        bottomBar.style.display = 'none';
@@ -5132,15 +5167,11 @@
 		                Save Current Document as Text<br>
 		                <small style="opacity: 0.7;">Active document only</small>
 		            </button>
-            
-		            <button id="save-current-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                Save Current Document as PDF<br>
-		                <small style="opacity: 0.7;">Active document only</small>
-		            </button>
+
             
 <button id="save-unicode-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px; background: #10B981; color: white;">
-    Save Non-English Document as PDF<br>
-    <small style="opacity: 0.9;">For Hindi, Arabic, Chinese, etc. Uses browser print</small>
+    Save Current Document as PDF<br>
+    <small style="opacity: 0.9;">Active document only, Uses browser print</small>
 </button>
 		           
             
@@ -5149,10 +5180,11 @@
 		                <small style="opacity: 0.7;">Complete library with folder structure</small>
 		            </button>
             
-		            <button id="save-all-pdf" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
-		                Save All Folders as PDF<br>
-		                <small style="opacity: 0.7;">Complete library with folder structure</small>
-		            </button>
+<button id="save-all-html" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px;">
+    Save All Folders as HTML<br>
+    <small style="opacity: 0.7;">Interactive webpage with clickable folders & documents</small>
+</button>
+		         
             
 		            <button id="backup-all" class="modal-button" style="width: 100%; margin: 8px 0; text-align: left; padding: 12px; background: #10B981; color: white;">
 		                Create Backup .wai<br>
@@ -5167,7 +5199,7 @@
     
 		    setTimeout(function() {
 		        var btn1 = document.getElementById('save-all-txt');
-		        var btn2 = document.getElementById('save-all-pdf');
+		        var btn2 = document.getElementById('save-all-html');
 		        var btn3 = document.getElementById('save-current-txt');
 		        var btn4 = document.getElementById('save-current-pdf');
 		        var btn5 = document.getElementById('backup-all');
@@ -5186,7 +5218,7 @@
 		            btn2.onclick = function() {
 		                btn2.onclick = null;
 		                hideModal();
-		                exportAllFoldersAsPDF();
+		                exportAllFoldersAsHTML();
 		            };
 		        }
         
@@ -5357,13 +5389,20 @@
 		        return;
 		    }
     
-		    var text = doc.text;
-		    var isFountain = /^(INT\.|EXT\.|INT\/EXT|I\/E)/im.test(text);
+		    // ✅ Get HTML content instead of plain text
+		    var htmlContent = editor.innerHTML;
+    
+		    // Convert to plain text for Fountain detection
+		    var tempDiv = document.createElement('div');
+		    tempDiv.innerHTML = htmlContent;
+		    var plainText = tempDiv.innerText || tempDiv.textContent;
+    
+		    var isFountain = /^(INT\.|EXT\.|INT\/EXT|I\/E)/im.test(plainText);
     
 		    // Create print window with proper Unicode fonts
 		    var printWindow = window.open('', '_blank');
     
-		    var htmlContent = `
+		    var printHtml = `
 		<!DOCTYPE html>
 		<html>
 		<head>
@@ -5446,6 +5485,28 @@
 		            min-height: 500px;
 		        }
         
+		        /* ✅ PRESERVE HTML FORMATTING */
+		        b, strong { font-weight: bold; }
+		        i, em { font-style: italic; }
+		        u { text-decoration: underline; }
+        
+		        h1 { font-size: 18pt; font-weight: bold; margin: 20px 0 10px; }
+		        h2 { font-size: 16pt; font-weight: bold; margin: 18px 0 8px; }
+		        h3 { font-size: 14pt; font-weight: bold; margin: 16px 0 6px; }
+        
+		        ul, ol { 
+		            margin: 10px 0; 
+		            padding-left: 30px; 
+		        }
+		        li { margin: 5px 0; }
+        
+		        blockquote {
+		            border-left: 4px solid #ccc;
+		            padding-left: 15px;
+		            margin: 15px 0;
+		            font-style: italic;
+		        }
+        
 		        ${isFountain ? `
 		        /* Fountain Screenplay Formatting */
 		        .scene-heading {
@@ -5485,13 +5546,7 @@
 		            text-align: right;
 		            font-weight: bold;
 		        }
-		        ` : `
-		        /* Plain text formatting */
-		        .content {
-		            white-space: pre-wrap;
-		            word-wrap: break-word;
-		        }
-		        `}
+		        ` : ''}
 		    </style>
 		</head>
 		<body>
@@ -5506,13 +5561,13 @@
     
 		    <div class="content">
 		        <h1>${doc.title}</h1>
-		        ${isFountain ? parseFountainForPrint(text) : `<div style="white-space: pre-wrap;">${text}</div>`}
+		        ${isFountain ? parseFountainForPrint(plainText) : htmlContent}
 		    </div>
 		</body>
 		</html>
 		    `;
     
-		    printWindow.document.write(htmlContent);
+		    printWindow.document.write(printHtml);
 		    printWindow.document.close();
     
 		    // Wait for fonts to load, then trigger print
@@ -5522,6 +5577,8 @@
 		    }, 1200);
 		}
 
+		window.exportUnicodePDFPrint = exportUnicodePDFPrint;
+		
 		// Fountain parser for proper screenplay formatting
 		function parseFountainForPrint(text) {
 		    var lines = text.split('\n');
@@ -5571,7 +5628,6 @@
 		
 		
 		
-
 		function exportCurrentDocumentAsText() {
 		    if (!currentDocumentId) {
 		        showCustomAlert('No Document', 'Please open a document first');
@@ -5586,13 +5642,16 @@
 		        return;
 		    }
     
+		    // ✅ Get current editor content
+		    var currentText = editor.innerText || editor.textContent;
+    
 		    var text = '# ' + doc.title + '\n\n';
 		    text += 'Created: ' + new Date(doc.lastModified).toLocaleString() + '\n';
 		    if (doc.tags && doc.tags.length > 0) {
 		        text += 'Tags: ' + doc.tags.map(function(t) { return '#' + t; }).join(', ') + '\n';
 		    }
 		    text += '\n' + '─'.repeat(50) + '\n\n';
-		    text += doc.text;
+		    text += currentText;  // ✅ Use current editor content
     
 		    var blob = new Blob([text], { type: 'text/plain' });
 		    var url = URL.createObjectURL(blob);
@@ -5625,7 +5684,9 @@
 		    }
 
 		    var doc = new jspdf.jsPDF();
-		    var text = editor.innerText;
+    
+		    // ✅ Get current editor content (with formatting awareness)
+		    var text = editor.innerText || editor.textContent;
     
 		    // Detect if Fountain screenplay
 		    if (/^(INT|EXT|INT\.?\/EXT|I\/E)[\.\s]/im.test(text)) {
@@ -5703,7 +5764,9 @@
 		        yPos += 15;
         
 		        doc.setFontSize(10);
-		        var lines = doc.splitTextToSize(document.text, 180);
+        
+		        // ✅ Use current editor content
+		        var lines = doc.splitTextToSize(text, 180);
 		        lines.forEach(function(line) {
 		            if (yPos > 280) {
 		                doc.addPage();
@@ -5717,12 +5780,134 @@
 		    doc.save(document.title.replace(/[^a-z0-9]/gi, '_') + '_' + Date.now() + '.pdf');
 		    showCustomAlert('Exported', 'Document exported as PDF');
 		}
-		
+
 		window.showAdvancedSaveOptions = showAdvancedSaveOptions;
 		window.exportAllFoldersAsText = exportAllFoldersAsText;
 		window.exportAllFoldersAsPDF = exportAllFoldersAsPDF;
 		window.exportCurrentDocumentAsText = exportCurrentDocumentAsText;
 		window.exportCurrentDocumentAsPDF = exportCurrentDocumentAsPDF;
+
+		
+		function exportAllFoldersAsHTML() {
+		    var files = getAllFiles();
+		    var folders = getAllFoldersData();
+    
+		    if (Object.keys(files).length === 0) {
+		        showCustomAlert('Empty Library', 'No documents to export');
+		        return;
+		    }
+    
+		    var parts = [];
+    
+		    parts.push('<!DOCTYPE html>');
+		    parts.push('<html lang="en">');
+		    parts.push('<head>');
+		    parts.push('<meta charset="UTF-8">');
+		    parts.push('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+		    parts.push('<title>Wraiter Library Export</title>');
+		    parts.push('<style>');
+		    parts.push('* { margin: 0; padding: 0; box-sizing: border-box; }');
+		    parts.push('body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; padding: 20px; }');
+		    parts.push('.container { max-width: 1200px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }');
+		    parts.push('h1 { color: #1976D2; border-bottom: 3px solid #1976D2; padding-bottom: 15px; margin-bottom: 30px; }');
+		    parts.push('.folder { margin-bottom: 40px; border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; }');
+		    parts.push('.folder-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; font-size: 20px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }');
+		    parts.push('.folder-header:hover { opacity: 0.9; }');
+		    parts.push('.folder-count { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 14px; }');
+		    parts.push('.folder-content { padding: 20px; display: none; }');
+		    parts.push('.folder-content.active { display: block; }');
+		    parts.push('.document { border-left: 4px solid #4285F4; padding: 20px; margin-bottom: 20px; background: #f9f9f9; border-radius: 4px; }');
+		    parts.push('.doc-title { font-size: 22px; font-weight: 600; color: #1976D2; margin-bottom: 10px; cursor: pointer; }');
+		    parts.push('.doc-title:hover { text-decoration: underline; }');
+		    parts.push('.doc-meta { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }');
+		    parts.push('.tag { background: #E8F5E9; color: #2E7D32; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 500; }');
+		    parts.push('.date { color: #666; font-size: 13px; }');
+		    parts.push('.doc-content { padding: 15px; background: white; border-radius: 4px; word-wrap: break-word; display: none; margin-top: 10px; border: 1px solid #e0e0e0; max-height: 400px; overflow-y: auto; }');
+		    parts.push('.doc-content.show { display: block; }');
+		    parts.push('.doc-content b, .doc-content strong { font-weight: bold; }');
+		    parts.push('.doc-content i, .doc-content em { font-style: italic; }');
+		    parts.push('.doc-content u { text-decoration: underline; }');
+		    parts.push('.doc-content h1 { font-size: 24px; font-weight: bold; margin: 15px 0 10px; }');
+		    parts.push('.doc-content h2 { font-size: 20px; font-weight: bold; margin: 12px 0 8px; }');
+		    parts.push('.doc-content h3 { font-size: 16px; font-weight: bold; margin: 10px 0 6px; }');
+		    parts.push('.doc-content ul, .doc-content ol { margin: 10px 0; padding-left: 30px; }');
+		    parts.push('.doc-content li { margin: 5px 0; }');
+		    parts.push('.stats { background: #f0f0f0; padding: 15px; border-radius: 8px; margin-bottom: 30px; display: flex; gap: 30px; flex-wrap: wrap; }');
+		    parts.push('.stat-value { font-weight: 600; color: #1976D2; font-size: 18px; }');
+		    parts.push('</style>');
+		    parts.push('</head>');
+		    parts.push('<body>');
+		    parts.push('<div class="container">');
+		    parts.push('<h1>&#128218; Wraiter Library Export</h1>');
+		    parts.push('<div class="stats">');
+		    parts.push('<div class="stat-item"><div class="stat-value">' + Object.keys(files).length + '</div><div>Documents</div></div>');
+		    parts.push('<div class="stat-item"><div class="stat-value">' + Object.keys(folders).length + '</div><div>Folders</div></div>');
+		    parts.push('<div class="stat-item"><div class="stat-value">' + new Date().toLocaleDateString() + '</div><div>Exported</div></div>');
+		    parts.push('</div>');
+    
+		    // Build folders
+		    Object.keys(folders).sort().forEach(function(folderName) {
+		        var folderDocs = Object.values(files).filter(function(f) {
+		            return (f.folder || 'All Documents') === folderName;
+		        });
+        
+		        if (folderDocs.length === 0) return;
+        
+		        var folderId = 'f' + Math.random().toString(36).substr(2, 9);
+        
+		        parts.push('<div class="folder">');
+		        parts.push('<div class="folder-header" onclick="toggleFolder(\'' + folderId + '\')">');
+		        parts.push('<span>&#128193; ' + folderName + '</span>');
+		        parts.push('<span class="folder-count">' + folderDocs.length + ' docs</span>');
+		        parts.push('</div>');
+		        parts.push('<div class="folder-content" id="' + folderId + '">');
+        
+		        folderDocs.forEach(function(doc) {
+		            var docId = 'd' + Math.random().toString(36).substr(2, 9);
+		            var tags = '';
+		            if (doc.tags && doc.tags.length > 0) {
+		                tags = doc.tags.map(function(t) { return '<span class="tag">#' + t + '</span>'; }).join('');
+		            }
+            
+		            // ✅ USE doc.content (HTML) instead of doc.text (plain text)
+		            var content = doc.content || doc.text || '';
+            
+		            parts.push('<div class="document">');
+		            parts.push('<div class="doc-title" onclick="toggleDoc(\'' + docId + '\')">' + doc.title + '</div>');
+		            parts.push('<div class="doc-meta">' + tags + '<span class="date">&#128197; ' + new Date(doc.lastModified).toLocaleDateString() + '</span></div>');
+		            parts.push('<div class="doc-content" id="' + docId + '">' + content + '</div>');
+		            parts.push('</div>');
+		        });
+        
+		        parts.push('</div></div>');
+		    });
+    
+		    parts.push('</div>');
+		    parts.push('<script>');
+		    parts.push('function toggleFolder(id){document.getElementById(id).classList.toggle("active");}');
+		    parts.push('function toggleDoc(id){document.getElementById(id).classList.toggle("show");}');
+		    parts.push('window.onload=function(){var f=document.querySelector(".folder-content");if(f)f.classList.add("active");};');
+		    parts.push('</' + 'script>');
+		    parts.push('</body>');
+		    parts.push('</html>');
+    
+		    var htmlContent = parts.join('\n');
+		    var blob = new Blob([htmlContent], { type: 'text/html' });
+		    var url = URL.createObjectURL(blob);
+		    var a = document.createElement('a');
+		    a.href = url;
+		    a.download = 'WraiterLibrary_' + Date.now() + '.html';
+		    document.body.appendChild(a);
+		    a.click();
+		    document.body.removeChild(a);
+		    URL.revokeObjectURL(url);
+    
+		    showCustomAlert('Exported', 'Library exported as interactive HTML file');
+		}
+
+		window.exportAllFoldersAsHTML = exportAllFoldersAsHTML;
+	
+		
 		
 		
 		function exportBackup() {
